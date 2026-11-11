@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  draftChanged,
   fetchShows,
+  sortChanged,
   genreReset,
   genreSelected,
   initialState,
   pageChanged,
+  resultsRestored,
   searchCleared,
   showsReducer,
   type ShowsState,
@@ -58,8 +61,40 @@ describe('showsSlice', () => {
     expect(showsReducer(state, genreReset())).toMatchObject({ selectedGenre: null, page: 1 });
   });
 
-  it('changes page and clears search', () => {
+  it('caches responses by normalized query, also outdated ones', () => {
+    let state = showsReducer(initialState, pending('old', ' Murder '));
+    state = showsReducer(state, pending('new', 'b'));
+    state = showsReducer(state, fulfilled('old', ' Murder '));
+
+    expect(state.cache.murder).toEqual(testShows);
+    expect(state.items).toEqual([]);
+  });
+
+  it('restores cached results and invalidates the pending request', () => {
+    const state = showsReducer(
+      { ...initialState, selectedGenre: 'Crime', page: 2, currentRequestId: 'r1', status: 'loading' },
+      resultsRestored({ query: 'banana', items: testShows }),
+    );
+
+    expect(state).toMatchObject({ status: 'succeeded', query: 'banana', page: 1, currentRequestId: null });
+    expect(state.selectedGenre).toBeNull();
+  });
+
+  it('changes page and clears search but keeps cache, field text and sort order', () => {
+    const cache = { murder: testShows };
+    const state: ShowsState = { ...initialState, items: testShows, cache, draft: ' ', sortBy: 'rating' };
+
     expect(showsReducer(initialState, pageChanged(2)).page).toBe(2);
-    expect(showsReducer({ ...initialState, items: testShows }, searchCleared())).toEqual(initialState);
+    expect(showsReducer(state, searchCleared())).toEqual({ ...initialState, cache, draft: ' ', sortBy: 'rating' });
+  });
+
+  it('stores the search field text', () => {
+    expect(showsReducer(initialState, draftChanged('Lost')).draft).toBe('Lost');
+  });
+
+  it('changes sort order and goes back to first page', () => {
+    const state: ShowsState = { ...initialState, page: 3 };
+
+    expect(showsReducer(state, sortChanged('rating'))).toMatchObject({ sortBy: 'rating', page: 1 });
   });
 });

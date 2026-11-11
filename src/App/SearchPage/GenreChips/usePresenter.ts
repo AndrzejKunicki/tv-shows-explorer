@@ -1,6 +1,6 @@
-import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { selectGenres, selectSelectedGenre } from '../../../store/shows/selectors';
-import { genreReset, genreSelected } from '../../../store/shows/showsSlice';
+import { useAppDispatch, useAppSelector } from '@src/store/hooks';
+import { selectGenres, selectSelectedGenre } from '@src/store/shows/selectors';
+import { genreReset, genreSelected } from '@src/store/shows/showsSlice';
 
 export const usePresenter = () => {
   const dispatch = useAppDispatch();

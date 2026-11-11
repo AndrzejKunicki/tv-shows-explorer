@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { RootState } from '../store';
+import type { RootState } from '@src/store/store';
 import {
   selectFilteredShows,
   selectGenres,
   selectPageCount,
   selectPagedShows,
 } from './selectors';
+import { initialState as discoverInitialState } from '@src/store/discover/discoverSlice';
 import { initialState, type ShowsState } from './showsSlice';
-import { testShows } from './testShows';
+import { makeShow, testShows } from './testShows';
 
 const rootState = (shows: Partial<ShowsState>): RootState => ({
   shows: { ...initialState, items: testShows, status: 'succeeded', ...shows },
+  discover: discoverInitialState,
 });
 
 const ids = (shows: { id: number }[]) => shows.map((show) => show.id);
@@ -43,5 +45,13 @@ describe('shows selectors', () => {
 
   it('has no pages for empty results', () => {
     expect(selectPageCount(rootState({ items: [] }))).toBe(0);
+  });
+
+  it('sorts by rating on request, unrated shows last', () => {
+    const rated = (id: number, average: number | null) => ({ ...makeShow(id, []), rating: { average } });
+    const items = [rated(1, 6), rated(2, null), rated(3, 9), rated(4, 7.5)];
+
+    expect(ids(selectFilteredShows(rootState({ items })))).toEqual([1, 2, 3, 4]);
+    expect(ids(selectFilteredShows(rootState({ items, sortBy: 'rating' })))).toEqual([3, 4, 1, 2]);
   });
 });

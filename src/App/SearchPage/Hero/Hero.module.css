@@ -1,0 +1,82 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: clamp(8px, 2vh, 20px);
+  text-align: center;
+}
+
+.logo {
+  margin: 0;
+  padding: 4px 14px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--marquee);
+  border: 1px solid rgb(242 181 68 / 0.45);
+  border-radius: 4px;
+  text-shadow: 0 0 12px rgb(242 181 68 / 0.6);
+  box-shadow:
+    0 0 18px -6px rgb(242 181 68 / 0.6),
+    inset 0 0 12px -6px rgb(242 181 68 / 0.6);
+}
+
+/* The headline "comes into focus" once, like a projector finding its sharpness */
+.headline {
+  max-width: 14ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(48px, 9vw, 96px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--marquee);
+  text-shadow:
+    0 0 18px rgb(242 181 68 / 0.45),
+    0 0 60px rgb(242 181 68 / 0.2);
+  text-wrap: balance;
+  animation: focus-pull 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lead {
+  max-width: 46ch;
+  margin: 0;
+  font-size: clamp(16px, 2vw, 19px);
+  color: rgb(243 237 228 / 0.85);
+  text-wrap: balance;
+}
+
+/* Compact (during a search): only the logo stays visible; the headline remains for screen readers */
+.hero[data-compact='true'] .headline,
+.hero[data-compact='true'] .lead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  animation: none;
+}
+
+@keyframes focus-pull {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.06);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headline {
+    animation: none;
+  }
+}

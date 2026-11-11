@@ -1,0 +1,45 @@
+/* Label above the chips, so the chips themselves sit exactly in the middle */
+.popular {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestion {
+  min-height: 34px;
+  padding: 4px 14px;
+  font-size: 14px;
+  color: var(--text);
+  background: rgb(21 17 22 / 0.75);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.suggestion:hover {
+  color: var(--marquee);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px -6px rgb(242 181 68 / 0.6);
+}

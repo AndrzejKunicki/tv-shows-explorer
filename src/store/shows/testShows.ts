@@ -1,4 +1,4 @@
-import type { Show } from '../../api/types';
+import type { Show } from '@src/api/types';
 
 export const makeShow = (id: number, genres: string[]): Show => ({
   id,
@@ -10,6 +10,7 @@ export const makeShow = (id: number, genres: string[]): Show => ({
   url: `https://www.tvmaze.com/shows/${id}`,
   image: null,
   rating: { average: null },
+  weight: 50,
 });
 
 export const testShows: Show[] = [

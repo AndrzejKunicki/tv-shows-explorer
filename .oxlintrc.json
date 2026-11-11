@@ -4,6 +4,11 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "max-lines": ["error", { "max": 120 }]
+    "max-lines": ["error", { "max": 120 }],
+    "curly": ["error", "all"],
+    "no-restricted-imports": [
+      "error",
+      { "patterns": [{ "group": ["../**"], "message": "Use the @src/... alias instead of ../" }] }
+    ]
   }
 }

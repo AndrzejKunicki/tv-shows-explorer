@@ -1,5 +1,5 @@
-import { useAppSelector } from '../../../store/hooks';
-import { selectPagedShows } from '../../../store/shows/selectors';
+import { useAppSelector } from '@src/store/hooks';
+import { selectPagedShows } from '@src/store/shows/selectors';
 
 export const usePresenter = () => {
   const shows = useAppSelector(selectPagedShows);

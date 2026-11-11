@@ -1,30 +1,29 @@
+/* Cinema theme: a dark screening room lit by warm marquee amber */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --text: #1c1f24;
-  --muted: #5f6672;
-  --border: #dde1e7;
-  --accent: #3b5bdb;
-  --accent-text: #ffffff;
-  --danger: #c92a2a;
+  --bg: #0a0809;
+  --surface: #151116;
+  --surface-hover: #1e1920;
+  --text: #f3ede4;
+  --muted: #a89f95;
+  --border: #2d2629;
+  --border-strong: #4b4043;
+  --accent: #f2b544;
+  --accent-text: #1a1206;
+  --accent-soft: rgb(242 181 68 / 0.18);
+  --marquee: #ffe2a8;
+  --danger: #ff8a7a;
 
+  --font-display: 'Bebas Neue', 'Oswald', Impact, sans-serif;
+
+  color-scheme: dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15171b;
-    --surface: #1e2126;
-    --text: #e8eaed;
-    --muted: #9aa1ad;
-    --border: #33373e;
-    --accent: #748ffc;
-    --accent-text: #15171b;
-    --danger: #ff8787;
-  }
+  accent-color: var(--accent);
+  caret-color: var(--accent);
+  scrollbar-color: var(--border-strong) var(--bg);
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -33,7 +32,18 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--bg);
+}
+
+::selection {
+  color: var(--accent-text);
+  background: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 button {

@@ -4,7 +4,9 @@ import { usePresenter } from './usePresenter';
 export const Pagination = () => {
   const { isVisible, label, canGoPrev, canGoNext, handlePrev, handleNext } = usePresenter();
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <nav className={styles.pagination} aria-label="Pagination">

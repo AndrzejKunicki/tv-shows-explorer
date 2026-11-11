@@ -2,26 +2,41 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
+  padding-top: 12px;
 }
 
 .button {
-  padding: 8px 16px;
+  min-height: 42px;
+  padding: 8px 20px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .button:not(:disabled):hover {
+  color: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 0 24px -6px rgb(242 181 68 / 0.5);
 }
 
 .button:disabled {
-  opacity: 0.4;
+  color: var(--border-strong);
+  background: transparent;
+  border-color: var(--border);
 }
 
 .label {
-  color: var(--muted);
   font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }

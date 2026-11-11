@@ -13,9 +13,17 @@ export interface Show {
   url: string;
   image: ShowImage | null;
   rating: { average: number | null };
+  /** TVMaze popularity, 0–100. */
+  weight: number;
 }
 
 export interface SearchResult {
   score: number;
+  show: Show;
+}
+
+/** One episode from the TV schedule; only the show is used. */
+export interface ScheduleEpisode {
+  id: number;
   show: Show;
 }
