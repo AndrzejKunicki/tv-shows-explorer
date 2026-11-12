@@ -108,7 +108,13 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
 - Стили и тесты лежат рядом с файлами, к которым относятся, — в том же каталоге.
 - Стили: `ComponentName.module.css` рядом с `ComponentName.tsx`.
 - Тесты: `FileName.test.ts(x)` рядом с тестируемым файлом, например `SearchBar.test.tsx`,
-  `usePresenter.test.ts`, `tvmaze.test.ts`.
+  `usePresenter.test.ts`, `tvmaze.test.ts`. Расширение теста совпадает с расширением файла:
+  `Foo.tsx` → `Foo.test.tsx`, `foo.ts` → `foo.test.ts`.
+- У каждого файла `.ts`/`.tsx` в `src/` есть свой тест. Исключения: стили (`*.css`), файлы только
+  с типами (`types.ts`), точка входа `main.tsx` и тестовые фикстуры/хелперы (`test*.ts(x)`,
+  например `testShows.ts`, `testStore.tsx`).
+- View тестируем с замоканным `usePresenter` (`vi.mock('./usePresenter')`), presenter — через
+  `renderHookWithStore` из `@src/store/testStore` (настоящий store, API замокан).
 
 ```
 SearchBar/
