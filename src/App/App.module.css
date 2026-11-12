@@ -1,0 +1,7 @@
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(32px, 7vh, 72px) 16px 64px;
+}

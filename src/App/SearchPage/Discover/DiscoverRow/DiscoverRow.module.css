@@ -1,0 +1,93 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--marquee);
+  text-shadow: 0 0 16px rgb(242 181 68 / 0.35);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.arrows {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.arrow:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Horizontal strip; padding leaves room for the card hover lift and glow */
+.track {
+  display: flex;
+  gap: 14px;
+  margin: -10px -6px 0;
+  padding: 10px 6px 14px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 6px;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.item {
+  flex: none;
+  width: clamp(138px, 18vw, 168px);
+  scroll-snap-align: start;
+}
+
+/* Touch screens swipe; arrows are for mouse users */
+@media (hover: none) {
+  .arrows {
+    display: none;
+  }
+}

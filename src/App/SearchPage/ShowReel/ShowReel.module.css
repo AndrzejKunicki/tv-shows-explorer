@@ -1,0 +1,223 @@
+/* Fixed behind the page content, above the cinema backdrop */
+.reel {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 1400px;
+  opacity: 0.6;
+  transition:
+    opacity 700ms ease,
+    visibility 0s;
+}
+
+/* Darker behind the title and search bar, so they stay readable; fades into the room at the edges */
+.reel::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background:
+    radial-gradient(ellipse 50% 32% at 50% 22%, rgb(10 8 9 / 0.88), rgb(10 8 9 / 0.35) 70%, rgb(10 8 9 / 0.1)),
+    linear-gradient(to bottom, var(--bg), transparent 18%, transparent 82%, var(--bg));
+}
+
+/* After fading out the wall stops animating, so it costs nothing behind the results */
+.hidden {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 700ms ease,
+    visibility 0s 700ms;
+}
+
+.hidden .track,
+.hidden .screen,
+.hidden .image {
+  animation-play-state: paused;
+}
+
+.wall {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 200vw;
+  transform: translate(-50%, -50%) rotateX(22deg) rotateZ(-9deg);
+  animation: reel-in 1.8s ease 0.4s both;
+}
+
+.track {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+  will-change: transform;
+  animation: scroll 120s linear infinite;
+}
+
+.track:nth-child(even) {
+  animation-direction: reverse;
+  animation-duration: 150s;
+}
+
+/* Before its image loads, a screen is a black frame of film: dark emulsion, a thin frame line, a faint flicker */
+.screen {
+  position: relative;
+  flex: none;
+  width: 150px;
+  aspect-ratio: 210 / 295;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgb(255 240 220 / 0.05), transparent 70%),
+    #050405;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 6px;
+  filter: grayscale(0.6) brightness(0.7);
+  transition: box-shadow 900ms ease;
+}
+
+.screen::before {
+  position: absolute;
+  inset: 7px;
+  z-index: 1;
+  content: '';
+  border: 1px solid rgb(255 240 220 / 0.07);
+  border-radius: 3px;
+  transition: opacity 900ms ease;
+  pointer-events: none;
+}
+
+.screen:not([data-loaded='true']) {
+  animation: blank-frame 2.4s steps(1) infinite;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  filter: blur(6px);
+  transition:
+    opacity 900ms ease,
+    filter 900ms ease;
+}
+
+/* Loaded: the poster develops out of the black frame */
+.screen[data-loaded='true'] .image {
+  opacity: 1;
+  filter: none;
+}
+
+.screen[data-loaded='true']::before {
+  opacity: 0;
+}
+
+/* "Playing" screens: in colour, slowly zooming and flickering like a projected trailer */
+.screen[data-playing='true'] {
+  filter: none;
+}
+
+.screen[data-playing='true'][data-loaded='true'] {
+  box-shadow: 0 0 40px -6px rgb(242 181 68 / 0.35);
+  animation: screen-flicker 5s steps(1) infinite;
+}
+
+.screen[data-playing='true'] .image {
+  animation: ken-burns 14s ease-in-out infinite alternate;
+}
+
+.screen[data-playing='true']::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0.06), transparent 30%, transparent 70%, rgb(0 0 0 / 0.5));
+}
+
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+
+  to {
+    transform: scale(1.18) translate(-4%, -3%);
+  }
+}
+
+@keyframes screen-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  37% {
+    opacity: 0.8;
+  }
+
+  38% {
+    opacity: 1;
+  }
+
+  71% {
+    opacity: 0.9;
+  }
+
+  72% {
+    opacity: 1;
+  }
+}
+
+@keyframes reel-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Blank film running through the projector: the empty frame flashes faintly */
+@keyframes blank-frame {
+  0%,
+  100% {
+    background-color: #050405;
+  }
+
+  23% {
+    background-color: #0d0b0c;
+  }
+
+  25% {
+    background-color: #050405;
+  }
+
+  61% {
+    background-color: #0a0809;
+  }
+
+  63% {
+    background-color: #050405;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall,
+  .track,
+  .screen,
+  .image {
+    animation: none !important;
+  }
+
+  .image {
+    transition: none;
+  }
+}

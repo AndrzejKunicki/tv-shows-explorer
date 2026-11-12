@@ -1,0 +1,10 @@
+#!/bin/sh
+# Blocks commits on the main branch. Every task gets its own branch.
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$branch" = "main" ]; then
+  echo "pre-commit: committing to 'main' is not allowed." >&2
+  echo "Create a task branch first, e.g.: git switch -c feature/<short-description>" >&2
+  exit 1
+fi

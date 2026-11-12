@@ -1,0 +1,26 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.message {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.error {
+  margin: 0;
+  text-align: center;
+  color: var(--danger);
+}
+
+/* Genre filter on the left, sort order on the right */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+}

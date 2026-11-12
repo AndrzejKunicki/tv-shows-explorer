@@ -1,0 +1,6 @@
+.discover {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 5vh, 44px);
+  margin-top: clamp(12px, 4vh, 40px);
+}
