@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/tv-shows-explorer/',
   plugins: [react()],
   resolve: {
     // Alias: import from "@src/store/hooks" instead of "../../../store/hooks" (see tsconfig.app.json)
