@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchSchedule, fetchShowIndex } from '@src/api/tvmaze';
 import { testShows } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';
-import { fetchGems, fetchIndex, fetchTodaySchedule } from './discoverSlice';
+import { fetchGems, fetchIndex, fetchTodaySchedule, initialState } from './discoverSlice';
 
 vi.mock('@src/api/tvmaze', () => ({ fetchShowIndex: vi.fn(), fetchSchedule: vi.fn(), searchShows: vi.fn() }));
 const fetchShowIndexMock = vi.mocked(fetchShowIndex);
@@ -44,6 +44,22 @@ describe('discover slice', () => {
     expect(store.getState().discover.index).toEqual({ status: 'failed', shows: [] });
   });
 
+  it('retries a failed feed on the next request', async () => {
+    fetchShowIndexMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(testShows);
+    const store = createStore();
+
+    await store.dispatch(fetchIndex());
+    await store.dispatch(fetchIndex());
+
+    expect(fetchShowIndexMock).toHaveBeenCalledTimes(2);
+    expect(store.getState().discover.index).toEqual({ status: 'succeeded', shows: testShows });
+  });
+
+  it('gives every feed its own initial object', () => {
+    expect(initialState.index).not.toBe(initialState.schedule);
+    expect(initialState.schedule).not.toBe(initialState.gems);
+  });
+
   it('keeps the shows of the schedule episodes', async () => {
     fetchScheduleMock.mockResolvedValue(testShows.map((show, index) => ({ id: 100 + index, show })));
     const store = createStore();
@@ -62,5 +78,23 @@ describe('discover slice', () => {
 
     expect(fetchShowIndexMock.mock.calls.map((call) => call[0])).toEqual([3, 4]);
     expect(store.getState().discover.gems.shows).toHaveLength(testShows.length);
+  });
+
+  it('keeps the gems of the pages that loaded when some fail', async () => {
+    fetchShowIndexMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(testShows);
+    const store = createStore();
+
+    await store.dispatch(fetchGems([3, 4]));
+
+    expect(store.getState().discover.gems).toEqual({ status: 'succeeded', shows: testShows });
+  });
+
+  it('fails the gems feed only when every page fails', async () => {
+    fetchShowIndexMock.mockRejectedValue(new Error('offline'));
+    const store = createStore();
+
+    await store.dispatch(fetchGems([3, 4]));
+
+    expect(store.getState().discover.gems).toEqual({ status: 'failed', shows: [] });
   });
 });
