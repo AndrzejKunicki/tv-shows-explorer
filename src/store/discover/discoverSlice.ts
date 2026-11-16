@@ -14,19 +14,22 @@ export interface Feed {
 /** Data for the start page: the decorative poster wall and the discovery rows. */
 export type DiscoverState = Record<FeedName, Feed>;
 
-const emptyFeed: Feed = { shows: [], status: 'idle' };
+const createEmptyFeed = (): Feed => ({ shows: [], status: 'idle' });
 
 export const initialState: DiscoverState = {
-  index: emptyFeed,
-  schedule: emptyFeed,
-  gems: emptyFeed,
+  index: createEmptyFeed(),
+  schedule: createEmptyFeed(),
+  gems: createEmptyFeed(),
 };
 
-/** Each feed is loaded once per session; this also prevents double requests from StrictMode effects. */
-const onlyOnce = (feed: FeedName) => ({
+/**
+ * Each feed is loaded once per session, and again only after a failure (the next visit of the start page
+ * retries it). This also prevents double requests from StrictMode effects.
+ */
+const onceUntilLoaded = (feed: FeedName) => ({
   condition: (_: unknown, { getState }: { getState: () => unknown }) => {
     const { status } = (getState() as RootState).discover[feed];
-    const shouldFetch = status === 'idle';
+    const shouldFetch = status === 'idle' || status === 'failed';
 
     return shouldFetch;
   },
@@ -36,7 +39,7 @@ const onlyOnce = (feed: FeedName) => ({
 export const fetchIndex = createAsyncThunk(
   'discover/fetchIndex',
   (_: void, { signal }) => fetchShowIndex(0, signal),
-  onlyOnce('index'),
+  onceUntilLoaded('index'),
 );
 
 /** Shows with an episode airing today on US TV. */
@@ -48,19 +51,24 @@ export const fetchTodaySchedule = createAsyncThunk(
 
     return shows;
   },
-  onlyOnce('schedule'),
+  onceUntilLoaded('schedule'),
 );
 
-/** Later index pages, where less known shows live. */
+/** Later index pages, where less known shows live. Failed pages are skipped; it fails only when all do. */
 export const fetchGems = createAsyncThunk(
   'discover/fetchGems',
   async (pages: number[], { signal }) => {
-    const responses = await Promise.all(pages.map((page) => fetchShowIndex(page, signal)));
-    const shows = responses.flat();
+    const responses = await Promise.allSettled(pages.map((page) => fetchShowIndex(page, signal)));
+    const loaded = responses.filter((response) => response.status === 'fulfilled');
+    if (loaded.length === 0) {
+      const [firstFailure] = responses as PromiseRejectedResult[];
+      throw firstFailure.reason;
+    }
+    const shows = loaded.flatMap((response) => response.value);
 
     return shows;
   },
-  onlyOnce('gems'),
+  onceUntilLoaded('gems'),
 );
 
 const addFeedCases = (
