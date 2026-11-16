@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { useAppDispatch, useAppSelector } from '@src/store/hooks';
-import { searchQuery, type FetchRequest } from '@src/store/shows/searchQuery';
+import { abortSearch, searchQuery } from '@src/store/shows/searchQuery';
 import { selectDraft } from '@src/store/shows/selectors';
 import { draftChanged } from '@src/store/shows/showsSlice';
 import { useDebouncedValue } from './useDebouncedValue';
@@ -17,15 +17,18 @@ export const usePresenter = () => {
   // The text lives in the store, because the "Popular on TV today" suggestions also set it
   const value = useAppSelector(selectDraft);
   const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_MS);
-  const lastRequest = useRef<FetchRequest | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    lastRequest.current?.abort();
-    lastRequest.current = dispatch(searchQuery(debouncedValue));
+    dispatch(searchQuery(debouncedValue));
   }, [debouncedValue, dispatch]);
 
-  useEffect(() => () => lastRequest.current?.abort(), []);
+  useEffect(
+    () => () => {
+      dispatch(abortSearch());
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
     const handleGlobalKey = (event: globalThis.KeyboardEvent) => {

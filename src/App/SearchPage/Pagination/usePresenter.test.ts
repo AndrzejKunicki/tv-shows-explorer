@@ -28,6 +28,12 @@ describe('Pagination usePresenter', () => {
     expect(result.current).toMatchObject({ isVisible: true, label: 'Page 1 of 3', canGoPrev: false, canGoNext: true });
   });
 
+  it('shows the last page when the stored page is out of range', () => {
+    const { result } = renderWithShows(PAGE_SIZE * 2, 5);
+
+    expect(result.current).toMatchObject({ label: 'Page 2 of 2', canGoPrev: true, canGoNext: false });
+  });
+
   it('goes to the next and previous page', () => {
     const { result, store } = renderWithShows(PAGE_SIZE * 3, 2);
 

@@ -1,38 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { searchShows } from '@src/api/tvmaze';
 import { createStore } from '@src/store/store';
-import { findCachedResults, searchQuery } from './searchQuery';
+import { findCachedResults } from './searchCache';
+import { abortSearch, searchQuery } from './searchQuery';
+import { deferredRequest, settle } from './testSearchRequests';
 import { makeShow, testShows } from './testShows';
 
 vi.mock('@src/api/tvmaze', () => ({ searchShows: vi.fn() }));
 const searchShowsMock = vi.mocked(searchShows);
 
 const search = async (store: ReturnType<typeof createStore>, query: string) => {
-  await store.dispatch(searchQuery(query));
+  store.dispatch(searchQuery(query));
+  await settle();
 };
-
-describe('findCachedResults', () => {
-  const cache = { banana: testShows, murder: [] };
-
-  it('returns exact hit', () => {
-    expect(findCachedResults(cache, 'banana')).toBe(testShows);
-  });
-
-  it('returns cached empty result for the same query', () => {
-    expect(findCachedResults(cache, 'murder')).toEqual([]);
-  });
-
-  it('returns null when a request is needed', () => {
-    expect(findCachedResults(cache, 'banan')).toBeNull();
-    expect(findCachedResults(cache, 'bananas')).toBeNull();
-    expect(findCachedResults(cache, 'murderxyz')).toBeNull();
-  });
-
-  it('ignores keys inherited from Object.prototype', () => {
-    expect(findCachedResults(cache, 'constructor')).toBeNull();
-    expect(findCachedResults(cache, 'tostring')).toBeNull();
-  });
-});
 
 describe('searchQuery', () => {
   // Braces matter: a function returned from beforeEach is run by Vitest as teardown
@@ -49,16 +29,6 @@ describe('searchQuery', () => {
     expect(searchShowsMock).toHaveBeenCalledTimes(1);
     expect(searchShowsMock.mock.calls[0][0]).toBe('Banana');
     expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'Banana' });
-  });
-
-  it('fetches queries named like Object.prototype members (constructor)', async () => {
-    searchShowsMock.mockResolvedValue(testShows);
-    const store = createStore();
-
-    await search(store, 'constructor');
-
-    expect(searchShowsMock).toHaveBeenCalledTimes(1);
-    expect(store.getState().shows).toMatchObject({ status: 'succeeded', items: testShows });
   });
 
   it('shows the previous response instead of fetching again (banana -> banan -> banana)', async () => {
@@ -92,6 +62,57 @@ describe('searchQuery', () => {
     await search(store, '   ');
 
     expect(store.getState().shows).toMatchObject({ status: 'idle', items: [] });
-    expect(store.getState().shows.cache.banana).toEqual(testShows);
+    expect(findCachedResults(store.getState().shows.cache, 'banana')).toEqual(testShows);
+  });
+
+  it('aborts the previous request, so its late response never replaces newer results', async () => {
+    const old = deferredRequest(searchShowsMock);
+    searchShowsMock.mockResolvedValueOnce(testShows);
+    const store = createStore();
+
+    store.dispatch(searchQuery('breaking bad'));
+    await search(store, 'lost');
+    old.resolve([makeShow(99, [])]);
+    await settle();
+
+    expect(old.signal?.aborted).toBe(true);
+    expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'lost', items: testShows });
+    expect(findCachedResults(store.getState().shows.cache, 'breaking bad')).toBeNull();
+  });
+
+  it('aborts the request in flight when the results come from the cache', async () => {
+    searchShowsMock.mockResolvedValueOnce(testShows);
+    const store = createStore();
+    await search(store, 'banana');
+    const lost = deferredRequest(searchShowsMock);
+
+    store.dispatch(searchQuery('lost'));
+    await search(store, 'banana');
+
+    expect(lost.signal?.aborted).toBe(true);
+    expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'banana', items: testShows });
+  });
+
+  it('aborts the request in flight when the query is cleared', async () => {
+    const lost = deferredRequest(searchShowsMock);
+    const store = createStore();
+
+    store.dispatch(searchQuery('lost'));
+    await search(store, '');
+
+    expect(lost.signal?.aborted).toBe(true);
+    expect(store.getState().shows).toMatchObject({ status: 'idle', error: null, items: [] });
+  });
+
+  it('abortSearch stops the request in flight and leaves the loading state untouched', async () => {
+    const lost = deferredRequest(searchShowsMock);
+    const store = createStore();
+
+    store.dispatch(searchQuery('lost'));
+    store.dispatch(abortSearch());
+    await settle();
+
+    expect(lost.signal?.aborted).toBe(true);
+    expect(store.getState().shows).toMatchObject({ query: 'lost', error: null });
   });
 });

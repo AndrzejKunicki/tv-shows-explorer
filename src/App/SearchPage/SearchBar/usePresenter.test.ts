@@ -51,6 +51,17 @@ describe('SearchBar usePresenter', () => {
     expect(firstSignal?.aborted).toBe(true);
   });
 
+  it('aborts the request in flight on unmount', () => {
+    const { result, unmount } = renderHookWithStore(usePresenter);
+
+    type(result, 'lost');
+    act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+    unmount();
+    const signal = searchShowsMock.mock.calls[0][1];
+
+    expect(signal?.aborted).toBe(true);
+  });
+
   it('clears the field on Escape', () => {
     const { result } = renderHookWithStore(usePresenter);
 

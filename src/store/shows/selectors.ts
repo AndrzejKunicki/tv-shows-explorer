@@ -35,6 +35,14 @@ export const selectPageCount = createSelector([selectFilteredShows], (shows) =>
   Math.ceil(shows.length / PAGE_SIZE),
 );
 
-export const selectPagedShows = createSelector([selectFilteredShows, selectPage], (shows, page) =>
+/** The stored page kept within 1..pageCount, so an out-of-range value never shows an empty list. */
+export const selectCurrentPage = createSelector([selectPage, selectPageCount], (page, pageCount) => {
+  const lastPage = Math.max(pageCount, 1);
+  const currentPage = Math.min(Math.max(page, 1), lastPage);
+
+  return currentPage;
+});
+
+export const selectPagedShows = createSelector([selectFilteredShows, selectCurrentPage], (shows, page) =>
   shows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
 );
