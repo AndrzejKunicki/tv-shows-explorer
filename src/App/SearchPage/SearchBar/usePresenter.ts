@@ -47,6 +47,8 @@ export const usePresenter = () => {
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
       dispatch(draftChanged(''));
+      // Clear right away instead of after the debounce, so a late response cannot flash the old results
+      dispatch(searchQuery(''));
     }
   };
 

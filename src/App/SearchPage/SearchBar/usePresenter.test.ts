@@ -62,13 +62,17 @@ describe('SearchBar usePresenter', () => {
     expect(signal?.aborted).toBe(true);
   });
 
-  it('clears the field on Escape', () => {
-    const { result } = renderHookWithStore(usePresenter);
+  it('clears the field and the search on Escape at once, aborting the request in flight', () => {
+    const { result, store } = renderHookWithStore(usePresenter);
 
     type(result, 'lost');
+    act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
     act(() => result.current.handleKeyDown({ key: 'Escape' } as KeyboardEvent<HTMLInputElement>));
+    const signal = searchShowsMock.mock.calls[0][1];
 
     expect(result.current.value).toBe('');
+    expect(signal?.aborted).toBe(true);
+    expect(store.getState().shows).toMatchObject({ status: 'idle', query: '' });
   });
 
   it('prevents the form from reloading the page', () => {
