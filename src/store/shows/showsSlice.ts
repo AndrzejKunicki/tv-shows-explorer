@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { searchShows } from '@src/api/tvmaze';
 import type { Show } from '@src/api/types';
+import { addToCache, toCacheKey, type CachedSearch } from './searchCache';
 
 export const PAGE_SIZE = 3;
 
@@ -17,9 +18,8 @@ export interface ShowsState {
   error: string | null;
   selectedGenre: string | null;
   page: number;
-  currentRequestId: string | null;
-  /** Responses already received, keyed by normalized query (see `toCacheKey`). */
-  cache: Record<string, Show[]>;
+  /** Last responses, oldest first, keyed by normalized query (see `searchCache.ts`). */
+  cache: CachedSearch[];
 }
 
 export const initialState: ShowsState = {
@@ -31,11 +31,8 @@ export const initialState: ShowsState = {
   error: null,
   selectedGenre: null,
   page: 1,
-  currentRequestId: null,
-  cache: {},
+  cache: [],
 };
-
-export const toCacheKey = (query: string) => query.trim().toLowerCase();
 
 export const fetchShows = createAsyncThunk('shows/fetch', (query: string, { signal }) =>
   searchShows(query, signal),
@@ -61,7 +58,6 @@ const showsSlice = createSlice({
       state.error = null;
       state.selectedGenre = null;
       state.page = 1;
-      state.currentRequestId = null;
     },
     genreSelected: (state, action: PayloadAction<string>) => {
       state.selectedGenre = action.payload;
@@ -83,25 +79,21 @@ const showsSlice = createSlice({
         state.error = null;
         state.selectedGenre = null;
         state.page = 1;
-        state.currentRequestId = action.meta.requestId;
       })
+      // An outdated request never gets here: `searchQuery` aborts it before starting a new one
       .addCase(fetchShows.fulfilled, (state, action) => {
-        state.cache[toCacheKey(action.meta.arg)] = action.payload;
-        if (state.currentRequestId !== action.meta.requestId) {
-          return;
-        }
+        state.cache = addToCache(state.cache, toCacheKey(action.meta.arg), action.payload);
         state.items = action.payload;
         state.status = 'succeeded';
-        state.currentRequestId = null;
       })
       .addCase(fetchShows.rejected, (state, action) => {
-        if (state.currentRequestId !== action.meta.requestId) {
+        // Aborted on purpose: a newer search (or clearing) already owns the state
+        if (action.meta.aborted) {
           return;
         }
         state.items = [];
         state.status = 'failed';
         state.error = action.error.message ?? 'Unknown error';
-        state.currentRequestId = null;
       });
   },
 });

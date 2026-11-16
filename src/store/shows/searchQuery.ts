@@ -1,38 +1,41 @@
-import type { Show } from '@src/api/types';
 import type { AppThunk } from '@src/store/store';
-import { fetchShows, resultsRestored, searchCleared, toCacheKey } from './showsSlice';
+import { findCachedResults, toCacheKey } from './searchCache';
+import { fetchShows, resultsRestored, searchCleared } from './showsSlice';
 
-export type FetchRequest = ReturnType<ReturnType<typeof fetchShows>>;
-
-/**
- * Returns results already fetched for exactly the same query (e.g. "banana" -> "banan" -> "banana"),
- * or `null` when the API has to be called.
- */
-export const findCachedResults = (cache: Record<string, Show[]>, key: string): Show[] | null =>
-  Object.hasOwn(cache, key) ? cache[key] : null;
+type FetchRequest = ReturnType<ReturnType<typeof fetchShows>>;
 
 /**
- * Searches shows for the query, reusing cached responses when possible.
- * Returns the API request (so the caller can abort it) or `null` when no request was sent.
+ * The only search request in flight. There is one search field in the app, so one slot is enough;
+ * every new search (fetch, cache hit or clearing) aborts it first, so an outdated response
+ * can never overwrite newer results.
  */
+let pendingRequest: FetchRequest | null = null;
+
+/** Aborts the search request in flight, if any (e.g. when the search field unmounts). */
+export const abortSearch = (): AppThunk => () => {
+  pendingRequest?.abort();
+  pendingRequest = null;
+};
+
+/** Searches shows for the query, reusing cached responses when possible. */
 export const searchQuery =
-  (rawQuery: string): AppThunk<FetchRequest | null> =>
+  (rawQuery: string): AppThunk =>
   (dispatch, getState) => {
+    dispatch(abortSearch());
+
     const query = rawQuery.trim();
     if (!query) {
       dispatch(searchCleared());
 
-      return null;
+      return;
     }
 
     const cached = findCachedResults(getState().shows.cache, toCacheKey(query));
     if (cached) {
       dispatch(resultsRestored({ query, items: cached }));
 
-      return null;
+      return;
     }
 
-    const request = dispatch(fetchShows(query));
-
-    return request;
+    pendingRequest = dispatch(fetchShows(query));
   };

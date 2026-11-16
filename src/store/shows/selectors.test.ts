@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RootState } from '@src/store/store';
 import {
+  selectCurrentPage,
   selectFilteredShows,
   selectGenres,
   selectPageCount,
@@ -41,6 +42,14 @@ describe('shows selectors', () => {
 
     expect(selectPageCount(state)).toBe(1);
     expect(ids(selectPagedShows(state))).toEqual([1, 3, 7]);
+  });
+
+  it('keeps an out-of-range page within the existing pages', () => {
+    expect(selectCurrentPage(rootState({ page: 0 }))).toBe(1);
+    expect(selectCurrentPage(rootState({ page: -2 }))).toBe(1);
+    expect(selectCurrentPage(rootState({ page: 99 }))).toBe(3);
+    expect(selectCurrentPage(rootState({ page: 2, items: [] }))).toBe(1);
+    expect(ids(selectPagedShows(rootState({ page: 99 })))).toEqual([7]);
   });
 
   it('has no pages for empty results', () => {
