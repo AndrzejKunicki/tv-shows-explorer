@@ -96,44 +96,80 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
   `mobx`, `@src/store/...` и т. п. Всё, что нужно от окружения (dispatch, вызов API, навигация),
   задача получает параметром. Смена стека (React → другой фреймворк, Redux → MobX) не требует
   изменений в задачах — меняется только presenter.
-- Presenter связывает задачу с окружением: читает данные из store, передаёт их и колбэки в задачу.
+- Presenter связывает задачу с окружением: передаёт в неё store, данные и колбэки.
+
+#### Работа со store в задачах
+
+- Логику работы со store («прочитать состояние → решить → отправить действие») по возможности держим
+  в задачах, а не в presenter — но только так, чтобы задача не зависела от библиотек.
+- Задача описывает **свой** тип store (порт) — только то, что ей нужно, например
+  `{ getPage(): number; changePage(page: number): void }`. Никаких типов и импортов из Redux.
+- Presenter собирает реализацию порта из настоящего store и передаёт её задаче параметром.
+  Store берём через `useAppStore()` из `@src/store/hooks`, а не импортом синглтона `store`
+  из `@src/store/store` — иначе в тестах обходится `<Provider>` и свежий store из `renderHookWithStore`.
+- Без `useAppSelector`/`useAppDispatch` можно обойтись везде, где не нужна реактивность:
+  - `store.dispatch(...)` — всегда (отправка действия — разовое событие);
+  - `store.getState()` — в обработчиках и задачах, когда нужно текущее значение в момент действия
+    (клик, submit, таймер).
+- Данные, которые отображает view, читаем только через `useAppSelector`: он подписывает компонент
+  на store и вызывает ре-рендер при изменении. `store.getState()` — разовый снимок без подписки:
+  при чтении во время рендера view не обновится после изменения store.
 
 ```ts
-// Pagination/logic/tasks/goToPage.ts — чистый TypeScript, без React и Redux
-type Params = {
-  page: number;
-  pageCount: number;
+// Pagination/logic/tasks/types.ts — порт store, без импортов из Redux
+export type PaginationStore = {
+  getPage: () => number;
+  getPageCount: () => number;
   changePage: (page: number) => void;
-};
-
-export const goToPage = ({ page, pageCount, changePage }: Params) => {
-  const isInRange = page >= 1 && page <= pageCount;
-
-  if (!isInRange) {
-    return;
-  }
-
-  changePage(page);
 };
 ```
 
 ```ts
-// Pagination/logic/usePresenter.ts — связывает задачу с Redux
-import { useAppDispatch, useAppSelector } from '@src/store/hooks';
+// Pagination/logic/tasks/goToNextPage.ts — чистый TypeScript, без React и Redux
+import type { PaginationStore } from './types';
+
+export const goToNextPage = (store: PaginationStore) => {
+  const page = store.getPage();
+  const canGoNext = page < store.getPageCount();
+
+  if (!canGoNext) {
+    return;
+  }
+
+  store.changePage(page + 1);
+};
+```
+
+`goToPreviousPage.ts` — аналогично.
+
+```ts
+// Pagination/logic/usePresenter.ts — связывает задачи с Redux
+import { useAppSelector, useAppStore } from '@src/store/hooks';
 import { selectCurrentPage, selectPageCount } from '@src/store/shows/selectors';
 import { pageChanged } from '@src/store/shows/showsSlice';
-import { goToPage } from './tasks/goToPage';
+import { goToNextPage } from './tasks/goToNextPage';
+import { goToPreviousPage } from './tasks/goToPreviousPage';
+import type { PaginationStore } from './tasks/types';
 
 export const usePresenter = () => {
-  const dispatch = useAppDispatch();
+  const store = useAppStore();
+  // Для отображения — подписка через useAppSelector (реактивно).
   const page = useAppSelector(selectCurrentPage);
   const pageCount = useAppSelector(selectPageCount);
-  const changePage = (nextPage: number) => dispatch(pageChanged(nextPage));
 
-  const handlePrev = () => goToPage({ page: page - 1, pageCount, changePage });
-  const handleNext = () => goToPage({ page: page + 1, pageCount, changePage });
+  // Для задач — порт: getState() читается в момент клика, dispatch без useAppDispatch.
+  const paginationStore: PaginationStore = {
+    getPage: () => selectCurrentPage(store.getState()),
+    getPageCount: () => selectPageCount(store.getState()),
+    changePage: (nextPage) => store.dispatch(pageChanged(nextPage)),
+  };
 
-  return { handlePrev, handleNext };
+  const isVisible = pageCount > 1;
+  const label = `Page ${page} of ${pageCount}`;
+  const handlePrev = () => goToPreviousPage(paginationStore);
+  const handleNext = () => goToNextPage(paginationStore);
+
+  return { isVisible, label, handlePrev, handleNext };
 };
 ```
 
@@ -149,11 +185,13 @@ export const usePresenter = () => {
 
 - Store глобальный, поэтому лежит на уровне `src/store/`:
   - `store.ts` — конфигурация store и типы `RootState`, `AppDispatch`,
-  - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
+  - `hooks.ts` — типизированные `useAppDispatch`, `useAppSelector` и `useAppStore`,
   - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`) и селекторами (`selectors.ts`).
 - С Redux работает только presenter (`logic/usePresenter.ts`). View и задачи (`tasks/`) никогда
   не импортируют store.
-- Используем только типизированные хуки из `src/store/hooks.ts`, а не «голые» `useSelector`/`useDispatch`.
+- Используем только типизированные хуки из `src/store/hooks.ts`, а не «голые» `useSelector`/`useDispatch`/`useStore`.
+  Когда реактивность не нужна, вместо хуков используем `store.getState()`/`store.dispatch()`
+  (см. «Работа со store в задачах» в §3).
 - Производные данные (фильтрация, пагинация, уникальные значения) вычисляем в селекторах (`createSelector`),
   а не в компонентах.
 - Асинхронные операции — `createAsyncThunk`, который вызывает функции из `src/api/`.
@@ -172,8 +210,8 @@ export const usePresenter = () => {
   например `testShows.ts`, `testStore.tsx`).
 - View тестируем с замоканным `usePresenter` (`vi.mock('./usePresenter')`), presenter — через
   `renderHookWithStore` из `@src/store/testStore` (настоящий store, API замокан).
-- Задачи тестируем как обычные функции, без store и `renderHook`: `tasks/goToPage.test.ts` рядом с
-  `tasks/goToPage.ts`, зависимости окружения — через `vi.fn()`.
+- Задачи тестируем как обычные функции, без store и `renderHook`: `tasks/goToNextPage.test.ts` рядом с
+  `tasks/goToNextPage.ts`, порт store — обычный объект с `vi.fn()`.
 
 ```
 SearchBar/
