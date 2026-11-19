@@ -20,9 +20,9 @@
 - У каждого компонента свой каталог `ComponentName/`.
 - `ComponentName.tsx` (view) — только JSX. Единственная логика: вызов `usePresenter(props)`.
   Никаких `useState`, `useEffect`, обработчиков и вычислений во view.
-- `usePresenter.ts` — вся логика компонента (состояние, эффекты, обработчики, подготовка данных).
-  Возвращает готовые данные и обработчики для view.
-- `usePresenter.ts` необязателен — только если у компонента есть логика.
+- `logic/usePresenter.ts` — вся логика компонента (состояние, эффекты, обработчики, подготовка данных).
+  Лежит в подкаталоге `logic/` того же компонента. Возвращает готовые данные и обработчики для view.
+- `logic/usePresenter.ts` необязателен — только если у компонента есть логика.
   Компонент, который лишь отображает пропсы, состоит из одного view.
 
 ### Пример структуры
@@ -33,11 +33,15 @@ src/
     App.tsx
     SearchPage/
       SearchPage.tsx
-      usePresenter.ts
       types.ts
+      logic/
+        usePresenter.ts
       SearchBar/
         SearchBar.tsx
-        usePresenter.ts
+        logic/
+          usePresenter.ts
+          tasks/
+            submitQuery.ts
       ResultsList/
         ResultsList.tsx
         ShowCard/
@@ -53,7 +57,7 @@ src/
 ### Пример компонента
 
 ```tsx
-// SearchBar/usePresenter.ts
+// SearchBar/logic/usePresenter.ts
 import { useState } from 'react';
 
 export const usePresenter = ({ onSearch }: { onSearch: (q: string) => void }) => {
@@ -69,7 +73,7 @@ export const usePresenter = ({ onSearch }: { onSearch: (q: string) => void }) =>
 
 ```tsx
 // SearchBar/SearchBar.tsx
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const SearchBar = (props: { onSearch: (q: string) => void }) => {
   const { query, handleChange, handleSubmit } = usePresenter(props);
@@ -78,6 +82,58 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
       <input value={query} onChange={handleChange} />
     </form>
   );
+};
+```
+
+### Задачи (tasks)
+
+- Presenter не содержит бизнес-логику сам — он её оркестрирует. Логику выносим в функции-задачи:
+  получают параметры и возвращают результат.
+- Название задачи — глагол, описывающий действие: `logout`, `unsubscribe`, `goToPage`, `submitQuery`.
+  Один файл — одна задача, имя файла совпадает с именем функции: `tasks/goToPage.ts`.
+- Задачи лежат в каталоге `tasks/` на том же уровне, что и `usePresenter.ts`: `ComponentName/logic/tasks/`.
+- Задачи не зависят от окружения и store: никаких импортов из `react`, `react-redux`, `@reduxjs/toolkit`,
+  `mobx`, `@src/store/...` и т. п. Всё, что нужно от окружения (dispatch, вызов API, навигация),
+  задача получает параметром. Смена стека (React → другой фреймворк, Redux → MobX) не требует
+  изменений в задачах — меняется только presenter.
+- Presenter связывает задачу с окружением: читает данные из store, передаёт их и колбэки в задачу.
+
+```ts
+// Pagination/logic/tasks/goToPage.ts — чистый TypeScript, без React и Redux
+type Params = {
+  page: number;
+  pageCount: number;
+  changePage: (page: number) => void;
+};
+
+export const goToPage = ({ page, pageCount, changePage }: Params) => {
+  const isInRange = page >= 1 && page <= pageCount;
+
+  if (!isInRange) {
+    return;
+  }
+
+  changePage(page);
+};
+```
+
+```ts
+// Pagination/logic/usePresenter.ts — связывает задачу с Redux
+import { useAppDispatch, useAppSelector } from '@src/store/hooks';
+import { selectCurrentPage, selectPageCount } from '@src/store/shows/selectors';
+import { pageChanged } from '@src/store/shows/showsSlice';
+import { goToPage } from './tasks/goToPage';
+
+export const usePresenter = () => {
+  const dispatch = useAppDispatch();
+  const page = useAppSelector(selectCurrentPage);
+  const pageCount = useAppSelector(selectPageCount);
+  const changePage = (nextPage: number) => dispatch(pageChanged(nextPage));
+
+  const handlePrev = () => goToPage({ page: page - 1, pageCount, changePage });
+  const handleNext = () => goToPage({ page: page + 1, pageCount, changePage });
+
+  return { handlePrev, handleNext };
 };
 ```
 
@@ -95,7 +151,8 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
   - `store.ts` — конфигурация store и типы `RootState`, `AppDispatch`,
   - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
   - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`) и селекторами (`selectors.ts`).
-- С Redux работает только presenter (`usePresenter.ts`). View никогда не импортирует store.
+- С Redux работает только presenter (`logic/usePresenter.ts`). View и задачи (`tasks/`) никогда
+  не импортируют store.
 - Используем только типизированные хуки из `src/store/hooks.ts`, а не «голые» `useSelector`/`useDispatch`.
 - Производные данные (фильтрация, пагинация, уникальные значения) вычисляем в селекторах (`createSelector`),
   а не в компонентах.
@@ -115,14 +172,20 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
   например `testShows.ts`, `testStore.tsx`).
 - View тестируем с замоканным `usePresenter` (`vi.mock('./usePresenter')`), presenter — через
   `renderHookWithStore` из `@src/store/testStore` (настоящий store, API замокан).
+- Задачи тестируем как обычные функции, без store и `renderHook`: `tasks/goToPage.test.ts` рядом с
+  `tasks/goToPage.ts`, зависимости окружения — через `vi.fn()`.
 
 ```
 SearchBar/
   SearchBar.tsx
   SearchBar.module.css
   SearchBar.test.tsx
-  usePresenter.ts
-  usePresenter.test.ts
+  logic/
+    usePresenter.ts
+    usePresenter.test.ts
+    tasks/
+      submitQuery.ts
+      submitQuery.test.ts
 ```
 
 ## 7. Размер файлов
