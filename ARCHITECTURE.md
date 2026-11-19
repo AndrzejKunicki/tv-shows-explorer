@@ -164,6 +164,68 @@ export const usePresenter = () => {
 };
 ```
 
+#### Явный вызов задач вместо реактивных цепочек
+
+- Действие пользователя → обработчик в presenter → **явный вызов задачи**. Нужна другая страница —
+  вызываем задачу «загрузить сериалы страницы», а не меняем `page` в store в расчёте, что `useEffect`
+  это заметит и загрузит данные.
+- Несколько шагов вызываем **по очереди** (`await` одной задачи за другой) — в обработчике или внутри
+  задачи. Порядок действий виден в коде. Когда много эффектов подписано на разные поля, неясно,
+  что за чем происходит и что запустило загрузку.
+- Store меняем **только по результату**: новая страница и её данные записываются вместе и только после
+  успешной загрузки. Если загрузка не удалась, store остаётся прежним — откатывать нечего.
+- `useEffect` не используем для запуска сценариев по изменению store или пропсов. Допустимо:
+  вызов задачи при монтировании и подписка на внешние источники (таймер, события окна) с cleanup.
+  Debounce — таймер в обработчике ввода, а не эффект на изменение `query`.
+
+```ts
+// ❌ Реактивно: смена page запускает эффект
+const page = useAppSelector(selectPage);
+
+useEffect(() => {
+  dispatch(fetchShows(page));
+}, [page]);
+
+const handleNext = () => dispatch(pageChanged(page + 1));
+// Загрузка страницы 2 упала, а в store уже page = 2: UI показывает «страницу 2»
+// со старыми данными или пустой список. Вернуться на страницу 1 нельзя без
+// дополнительных полей и флагов — смена page снова запустит эффект.
+```
+
+```ts
+// ✅ Явно: SearchPage/logic/tasks/loadShowsPage.ts
+import { fetchShowIndex } from '@src/api/tvmaze';
+import { store } from '@src/store/store';
+import { showsPageLoaded } from '@src/store/shows/showsSlice';
+
+type LoadShowsPageResult = { error: string | null };
+
+export const loadShowsPage = async (page: number): Promise<LoadShowsPageResult> => {
+  try {
+    const shows = await fetchShowIndex(page);
+    // Страница и данные меняются вместе и только при успехе.
+    store.dispatch(showsPageLoaded({ page, shows }));
+
+    return { error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    return { error: message };
+  }
+};
+```
+
+```ts
+// ✅ SearchPage/logic/usePresenter.ts — обработчик явно вызывает задачу
+const handleNext = async () => {
+  setIsLoading(true);
+  const result = await loadShowsPage(page + 1);
+  setIsLoading(false);
+  // При ошибке page в store не изменился — пользователь остаётся на текущей странице.
+  setError(result.error);
+};
+```
+
 #### Presenter и store
 
 - Presenter **не содержит бизнес-логику** — её выносим в задачи. Presenter готовит данные для view,
@@ -172,7 +234,8 @@ export const usePresenter = () => {
   Он подписывает компонент на store, и view перерисовывается при изменении.
   `store.getState()` — разовый снимок без подписки: для отображения не подходит.
 - **Запись** в store из presenter — можно, если она примитивна: один `dispatch` без условий и
-  последовательности шагов (например, смена страницы). Как только запись обрастает логикой
+  последовательности шагов, и на это изменение не реагирует ни один эффект (например, смена страницы
+  при пагинации уже загруженного списка). Как только запись обрастает логикой
   (проверки, несколько шагов, вызов API) — это сигнал вынести её в задачу.
 - **Loading и error** одного действия, нужные только этому компоненту, держим в presenter (`useState`),
   а не в store. В store кладём то, что нужно нескольким компонентам (например, результаты поиска читают
