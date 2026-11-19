@@ -1,6 +1,6 @@
 import { ShowCard } from './ShowCard/ShowCard';
 import styles from './ShowList.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const ShowList = () => {
   const { shows } = usePresenter();

@@ -1,5 +1,5 @@
 import styles from './Hero.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const Hero = () => {
   const { isCompact } = usePresenter();

@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
 import { ShowList } from './ShowList';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
-vi.mock('./usePresenter', () => ({ usePresenter: vi.fn() }));
+vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 const usePresenterMock = vi.mocked(usePresenter);
 
 describe('ShowList', () => {

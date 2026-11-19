@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SearchPage } from './SearchPage';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
-vi.mock('./usePresenter', () => ({ usePresenter: vi.fn() }));
+vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 vi.mock('./ShowReel/ShowReel', () => ({ ShowReel: () => <div>ShowReel</div> }));
 vi.mock('./Hero/Hero', () => ({ Hero: () => <div>Hero</div> }));
 vi.mock('./SearchBar/SearchBar', () => ({ SearchBar: () => <div>SearchBar</div> }));

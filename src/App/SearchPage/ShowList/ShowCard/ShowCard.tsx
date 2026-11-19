@@ -1,7 +1,7 @@
 import type { Show } from '@src/api/types';
 import { RatingBadge } from '@src/components/RatingBadge/RatingBadge';
 import styles from './ShowCard.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const ShowCard = (props: { show: Show }) => {
   const { name, url, imageUrl, rating, meta, genres, summary } = usePresenter(props);

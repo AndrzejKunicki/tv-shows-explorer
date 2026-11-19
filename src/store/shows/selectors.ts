@@ -12,6 +12,7 @@ export const selectSelectedGenre = (state: RootState) => selectShows(state).sele
 export const selectPage = (state: RootState) => selectShows(state).page;
 export const selectDraft = (state: RootState) => selectShows(state).draft;
 export const selectSortBy = (state: RootState) => selectShows(state).sortBy;
+export const selectCache = (state: RootState) => selectShows(state).cache;
 
 export const selectGenres = createSelector([selectItems], (items) =>
   [...new Set(items.flatMap((show) => show.genres))].sort((a, b) => a.localeCompare(b)),

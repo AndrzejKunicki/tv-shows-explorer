@@ -1,7 +1,7 @@
 import type { Show } from '@src/api/types';
 import { RatingBadge } from '@src/components/RatingBadge/RatingBadge';
 import styles from './PosterCard.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 /** Compact show card for the discovery rows; opens the show page on TVMaze. */
 export const PosterCard = (props: { show: Show }) => {
