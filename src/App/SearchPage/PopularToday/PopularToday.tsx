@@ -1,5 +1,5 @@
 import styles from './PopularToday.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 /** One-click searches for the most popular shows airing today (real TVMaze schedule data). */
 export const PopularToday = () => {

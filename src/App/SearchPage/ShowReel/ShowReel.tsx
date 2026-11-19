@@ -1,5 +1,5 @@
 import styles from './ShowReel.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 /** Decorative wall of screens behind the start page, like trailer screens in a cinema lobby. */
 export const ShowReel = () => {

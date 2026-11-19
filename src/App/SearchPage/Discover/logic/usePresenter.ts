@@ -1,0 +1,38 @@
+import { useEffect } from 'react';
+import { selectAiringToday, selectFanFavorites, selectHiddenGems } from '@src/store/discover/selectors';
+import { useAppSelector } from '@src/store/hooks';
+import { loadShowIndex } from '@src/tasks/loadShowIndex';
+import { loadTodaySchedule } from '@src/tasks/loadTodaySchedule';
+import { loadGems } from './tasks/loadGems';
+
+export const usePresenter = () => {
+  const airingToday = useAppSelector(selectAiringToday);
+  const fanFavorites = useAppSelector(selectFanFavorites);
+  const hiddenGems = useAppSelector(selectHiddenGems);
+
+  useEffect(() => {
+    loadTodaySchedule();
+    loadShowIndex();
+    loadGems();
+  }, []);
+
+  // A row without data (still loading or failed) is not shown
+  const rows = [
+    { id: 'airing-today', title: 'Airing today', subtitle: 'New episodes on US TV today', shows: airingToday },
+    {
+      id: 'fan-favorites',
+      title: 'Fan favorites',
+      subtitle: 'The highest rated shows on TVmaze',
+      shows: fanFavorites,
+    },
+    {
+      id: 'hidden-gems',
+      title: 'Hidden gems',
+      subtitle: 'Rated 7.8+ by viewers, yet flying under the radar',
+      shows: hiddenGems,
+    },
+  ].filter((row) => row.shows.length > 0);
+  const hasRows = rows.length > 0;
+
+  return { rows, hasRows };
+};

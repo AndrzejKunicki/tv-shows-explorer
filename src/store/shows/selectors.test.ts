@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RootState } from '@src/store/store';
 import {
+  selectCache,
   selectCurrentPage,
   selectFilteredShows,
   selectGenres,
@@ -62,5 +63,14 @@ describe('shows selectors', () => {
 
     expect(ids(selectFilteredShows(rootState({ items })))).toEqual([1, 2, 3, 4]);
     expect(ids(selectFilteredShows(rootState({ items, sortBy: 'rating' })))).toEqual([3, 4, 1, 2]);
+  });
+});
+
+describe('selectCache', () => {
+  it('returns the cached search responses', () => {
+    const cache = [{ key: 'lost', shows: testShows }];
+    const state: RootState = { shows: { ...initialState, cache }, discover: discoverInitialState };
+
+    expect(selectCache(state)).toBe(cache);
   });
 });

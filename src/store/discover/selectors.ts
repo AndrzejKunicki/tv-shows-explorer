@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { Show } from '@src/api/types';
 import type { RootState } from '@src/store/store';
+import type { FeedName } from './discoverSlice';
 
 export const DISCOVER_ROW_SIZE = 20;
 export const POPULAR_TODAY_COUNT = 5;
@@ -13,6 +14,8 @@ export const GEM_MIN_COUNT = 6;
 const selectIndexShows = (state: RootState) => state.discover.index.shows;
 const selectScheduleShows = (state: RootState) => state.discover.schedule.shows;
 const selectGemShows = (state: RootState) => state.discover.gems.shows;
+
+export const selectFeedStatus = (state: RootState, feed: FeedName) => state.discover[feed].status;
 
 const uniqueById = (shows: Show[]) => [...new Map(shows.map((show) => [show.id, show])).values()];
 const byRatingDesc = (a: Show, b: Show) => (b.rating.average ?? 0) - (a.rating.average ?? 0);

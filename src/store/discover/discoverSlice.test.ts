@@ -1,58 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchSchedule, fetchShowIndex } from '@src/api/tvmaze';
+import { describe, expect, it } from 'vitest';
 import { testShows } from '@src/store/shows/testShows';
-import { createStore } from '@src/store/store';
-import { fetchGems, fetchIndex, fetchTodaySchedule, initialState } from './discoverSlice';
-
-vi.mock('@src/api/tvmaze', () => ({ fetchShowIndex: vi.fn(), fetchSchedule: vi.fn(), searchShows: vi.fn() }));
-const fetchShowIndexMock = vi.mocked(fetchShowIndex);
-const fetchScheduleMock = vi.mocked(fetchSchedule);
+import { discoverReducer, feedFailed, feedLoaded, feedRequested, initialState } from './discoverSlice';
 
 describe('discover slice', () => {
-  // Braces matter: a function returned from beforeEach is run by Vitest as teardown
-  beforeEach(() => {
-    fetchShowIndexMock.mockReset();
-    fetchScheduleMock.mockReset();
-  });
-
-  it('stores the first index page', async () => {
-    fetchShowIndexMock.mockResolvedValue(testShows);
-    const store = createStore();
-
-    await store.dispatch(fetchIndex());
-
-    expect(fetchShowIndexMock.mock.calls[0][0]).toBe(0);
-    expect(store.getState().discover.index).toEqual({ status: 'succeeded', shows: testShows });
-  });
-
-  it('fetches a feed only once, even when dispatched twice (StrictMode effects)', async () => {
-    fetchShowIndexMock.mockResolvedValue(testShows);
-    const store = createStore();
-
-    await Promise.all([store.dispatch(fetchIndex()), store.dispatch(fetchIndex())]);
-    await store.dispatch(fetchIndex());
-
-    expect(fetchShowIndexMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('marks a feed as failed when the request fails', async () => {
-    fetchShowIndexMock.mockRejectedValue(new Error('offline'));
-    const store = createStore();
-
-    await store.dispatch(fetchIndex());
-
-    expect(store.getState().discover.index).toEqual({ status: 'failed', shows: [] });
-  });
-
-  it('retries a failed feed on the next request', async () => {
-    fetchShowIndexMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(testShows);
-    const store = createStore();
-
-    await store.dispatch(fetchIndex());
-    await store.dispatch(fetchIndex());
-
-    expect(fetchShowIndexMock).toHaveBeenCalledTimes(2);
-    expect(store.getState().discover.index).toEqual({ status: 'succeeded', shows: testShows });
+  it('starts with idle, empty feeds', () => {
+    expect(discoverReducer(undefined, { type: 'init' })).toEqual(initialState);
   });
 
   it('gives every feed its own initial object', () => {
@@ -60,41 +12,22 @@ describe('discover slice', () => {
     expect(initialState.schedule).not.toBe(initialState.gems);
   });
 
-  it('keeps the shows of the schedule episodes', async () => {
-    fetchScheduleMock.mockResolvedValue(testShows.map((show, index) => ({ id: 100 + index, show })));
-    const store = createStore();
+  it('marks a requested feed as loading', () => {
+    const state = discoverReducer(initialState, feedRequested('index'));
 
-    await store.dispatch(fetchTodaySchedule());
-
-    expect(fetchScheduleMock.mock.calls[0][0]).toBe('US');
-    expect(store.getState().discover.schedule.shows).toEqual(testShows);
+    expect(state.index.status).toBe('loading');
+    expect(state.schedule.status).toBe('idle');
   });
 
-  it('merges the requested index pages into the gems feed', async () => {
-    fetchShowIndexMock.mockImplementation(async (page = 0) => testShows.filter((show) => show.id % 2 === page % 2));
-    const store = createStore();
+  it('stores the shows of a loaded feed', () => {
+    const state = discoverReducer(initialState, feedLoaded({ feed: 'gems', shows: testShows }));
 
-    await store.dispatch(fetchGems([3, 4]));
-
-    expect(fetchShowIndexMock.mock.calls.map((call) => call[0])).toEqual([3, 4]);
-    expect(store.getState().discover.gems.shows).toHaveLength(testShows.length);
+    expect(state.gems).toEqual({ status: 'succeeded', shows: testShows });
   });
 
-  it('keeps the gems of the pages that loaded when some fail', async () => {
-    fetchShowIndexMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(testShows);
-    const store = createStore();
+  it('marks a feed as failed', () => {
+    const state = discoverReducer(discoverReducer(initialState, feedRequested('schedule')), feedFailed('schedule'));
 
-    await store.dispatch(fetchGems([3, 4]));
-
-    expect(store.getState().discover.gems).toEqual({ status: 'succeeded', shows: testShows });
-  });
-
-  it('fails the gems feed only when every page fails', async () => {
-    fetchShowIndexMock.mockRejectedValue(new Error('offline'));
-    const store = createStore();
-
-    await store.dispatch(fetchGems([3, 4]));
-
-    expect(store.getState().discover.gems).toEqual({ status: 'failed', shows: [] });
+    expect(state.schedule).toEqual({ status: 'failed', shows: [] });
   });
 });

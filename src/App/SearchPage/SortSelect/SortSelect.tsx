@@ -1,5 +1,5 @@
 import styles from './SortSelect.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const SortSelect = () => {
   const { value, options, handleChange } = usePresenter();

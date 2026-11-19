@@ -5,6 +5,7 @@ import {
   POPULAR_TODAY_COUNT,
   selectAiringToday,
   selectFanFavorites,
+  selectFeedStatus,
   selectHiddenGems,
   selectPopularToday,
 } from './selectors';
@@ -61,5 +62,14 @@ describe('discover selectors', () => {
     it('returns nothing when there are too few gems to fill a row', () => {
       expect(selectHiddenGems(discoverState({ gems: gems.slice(1) }))).toEqual([]);
     });
+  });
+});
+
+describe('selectFeedStatus', () => {
+  it('returns the status of the given feed', () => {
+    const state = discoverState({ gems: [withPoster(1, 8)] });
+
+    expect(selectFeedStatus(state, 'gems')).toBe('succeeded');
+    expect(selectFeedStatus(state, 'index')).toBe('idle');
   });
 });

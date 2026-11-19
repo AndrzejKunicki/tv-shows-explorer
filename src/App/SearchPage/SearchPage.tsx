@@ -8,7 +8,7 @@ import styles from './SearchPage.module.css';
 import { ShowList } from './ShowList/ShowList';
 import { ShowReel } from './ShowReel/ShowReel';
 import { SortSelect } from './SortSelect/SortSelect';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const SearchPage = () => {
   const { message, isError, hasResults, showDiscover } = usePresenter();

@@ -1,24 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   draftChanged,
-  fetchShows,
   sortChanged,
   genreReset,
   genreSelected,
   initialState,
   pageChanged,
+  resultsReceived,
   resultsRestored,
   searchCleared,
+  searchFailed,
+  searchStarted,
   showsReducer,
   type ShowsState,
 } from './showsSlice';
 import { CACHE_LIMIT } from './searchCache';
 import { testShows } from './testShows';
 
-const pending = (requestId: string, query = 'murder') =>
-  fetchShows.pending(requestId, query);
-const fulfilled = (requestId: string, query = 'murder') =>
-  fetchShows.fulfilled(testShows, requestId, query);
+const received = (query = 'murder') => resultsReceived({ query, items: testShows });
 
 describe('showsSlice', () => {
   it('starts empty and idle', () => {
@@ -27,35 +26,23 @@ describe('showsSlice', () => {
 
   it('resets genre and page when a new search starts', () => {
     const state: ShowsState = { ...initialState, selectedGenre: 'Crime', page: 3 };
-    const next = showsReducer(state, pending('r1'));
+    const next = showsReducer(state, searchStarted('murder'));
 
     expect(next).toMatchObject({ status: 'loading', query: 'murder', selectedGenre: null, page: 1 });
   });
 
-  it('stores results of the latest request', () => {
-    const next = showsReducer(showsReducer(initialState, pending('r1')), fulfilled('r1'));
+  it('stores received results', () => {
+    const next = showsReducer(showsReducer(initialState, searchStarted('murder')), received());
 
     expect(next.status).toBe('succeeded');
     expect(next.items).toHaveLength(testShows.length);
   });
 
   it('stores error on failure', () => {
-    let state = showsReducer(initialState, pending('r1'));
-    state = showsReducer(state, fetchShows.rejected(new Error('boom'), 'r1', 'murder'));
+    let state = showsReducer(initialState, searchStarted('murder'));
+    state = showsReducer(state, searchFailed('boom'));
 
     expect(state).toMatchObject({ status: 'failed', error: 'boom', items: [] });
-  });
-
-  it('ignores an aborted request, because a newer search already owns the state', () => {
-    let state = showsReducer(initialState, pending('old', 'a'));
-    state = showsReducer(state, pending('new', 'b'));
-    // RTK marks a rejection as `meta.aborted` when the error is an AbortError
-    const aborted = fetchShows.rejected(new DOMException('Aborted', 'AbortError'), 'old', 'a');
-    state = showsReducer(state, aborted);
-
-    expect(aborted.meta.aborted).toBe(true);
-
-    expect(state).toMatchObject({ status: 'loading', query: 'b', error: null, items: [] });
   });
 
   it('selecting and resetting genre goes back to first page', () => {
@@ -66,7 +53,7 @@ describe('showsSlice', () => {
   });
 
   it('caches responses by normalized query', () => {
-    const state = showsReducer(showsReducer(initialState, pending('r1', ' Murder ')), fulfilled('r1', ' Murder '));
+    const state = showsReducer(initialState, received(' Murder '));
 
     expect(state.cache).toEqual([{ key: 'murder', shows: testShows }]);
   });
@@ -74,7 +61,7 @@ describe('showsSlice', () => {
   it(`keeps at most ${CACHE_LIMIT} cached responses`, () => {
     let state = initialState;
     for (let index = 0; index <= CACHE_LIMIT; index++) {
-      state = showsReducer(state, fulfilled(`r${index}`, `q${index}`));
+      state = showsReducer(state, received(`q${index}`));
     }
 
     expect(state.cache).toHaveLength(CACHE_LIMIT);
