@@ -280,7 +280,29 @@ export const goToNextPage = async () => {
 ```
 
 Пока идёт загрузка, UI уже показывает новый номер страницы — кнопки пагинации на это время блокируем
-(`isLoading` в presenter).
+(`isLoading` в presenter):
+
+```ts
+// ✅ Pagination/logic/usePresenter.ts — loading локально, на время задачи
+import { useState } from 'react';
+import { goToNextPage } from './tasks/goToNextPage';
+
+export const usePresenter = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleNext = async () => {
+    setIsLoading(true);
+    const result = await goToNextPage();
+    setIsLoading(false);
+    setError(result.error);
+  };
+
+  const isDisabled = isLoading;
+
+  return { isDisabled, error, handleNext };
+};
+```
 
 #### Presenter и store
 
