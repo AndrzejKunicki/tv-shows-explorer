@@ -20,7 +20,8 @@
 - У каждого компонента свой каталог `ComponentName/`.
 - `ComponentName.tsx` (view) — только JSX. Единственная логика: вызов `usePresenter(props)`.
   Никаких `useState`, `useEffect`, обработчиков и вычислений во view.
-- `logic/usePresenter.ts` — вся логика компонента (состояние, эффекты, обработчики, подготовка данных).
+- `logic/usePresenter.ts` — логика компонента (состояние UI, эффекты, обработчики, подготовка данных,
+  вызов задач). Бизнес-логика — в задачах (`logic/tasks/`, см. ниже).
   Лежит в подкаталоге `logic/` того же компонента. Возвращает готовые данные и обработчики для view.
 - `logic/usePresenter.ts` необязателен — только если у компонента есть логика.
   Компонент, который лишь отображает пропсы, состоит из одного view.
@@ -41,7 +42,7 @@ src/
         logic/
           usePresenter.ts
           tasks/
-            submitQuery.ts
+            findShows.ts
       ResultsList/
         ResultsList.tsx
         ShowCard/
@@ -87,95 +88,112 @@ export const SearchBar = (props: { onSearch: (q: string) => void }) => {
 
 ### Задачи (tasks)
 
-- Presenter не содержит бизнес-логику сам — он её оркестрирует. Логику выносим в функции-задачи:
-  получают параметры и возвращают результат.
-- Название задачи — глагол, описывающий действие: `logout`, `unsubscribe`, `goToPage`, `submitQuery`.
-  Один файл — одна задача, имя файла совпадает с именем функции: `tasks/goToPage.ts`.
-- Задачи лежат в каталоге `tasks/` на том же уровне, что и `usePresenter.ts`: `ComponentName/logic/tasks/`.
-- Задачи не зависят от окружения и store: никаких импортов из `react`, `react-redux`, `@reduxjs/toolkit`,
-  `mobx`, `@src/store/...` и т. п. Всё, что нужно от окружения (dispatch, вызов API, навигация),
-  задача получает параметром. Смена стека (React → другой фреймворк, Redux → MobX) не требует
-  изменений в задачах — меняется только presenter.
-- Presenter связывает задачу с окружением: передаёт в неё store, данные и колбэки.
+Задача — вариант использования (use case): то, что пользователь просит приложение сделать
+(«найти сериал», «выйти из аккаунта»). Это и есть бизнес-логика. Её можно описать словами, не упомянув
+ни одного инструмента, — так же её пишем и в коде.
 
-#### Работа со store в задачах
-
-- Логику работы со store («прочитать состояние → решить → отправить действие») по возможности держим
-  в задачах, а не в presenter — но только так, чтобы задача не зависела от библиотек.
-- Задача описывает **свой** тип store (порт) — только то, что ей нужно, например
-  `{ getPage(): number; changePage(page: number): void }`. Никаких типов и импортов из Redux.
-- Presenter собирает реализацию порта из настоящего store и передаёт её задаче параметром.
-  Store берём через `useAppStore()` из `@src/store/hooks`, а не импортом синглтона `store`
-  из `@src/store/store` — иначе в тестах обходится `<Provider>` и свежий store из `renderHookWithStore`.
-- Без `useAppSelector`/`useAppDispatch` можно обойтись везде, где не нужна реактивность:
-  - `store.dispatch(...)` — всегда (отправка действия — разовое событие);
-  - `store.getState()` — в обработчиках и задачах, когда нужно текущее значение в момент действия
-    (клик, submit, таймер).
-- Данные, которые отображает view, читаем только через `useAppSelector`: он подписывает компонент
-  на store и вызывает ре-рендер при изменении. `store.getState()` — разовый снимок без подписки:
-  при чтении во время рендера view не обновится после изменения store.
-
-```ts
-// Pagination/logic/tasks/types.ts — порт store, без импортов из Redux
-export type PaginationStore = {
-  getPage: () => number;
-  getPageCount: () => number;
-  changePage: (page: number) => void;
-};
+```
+View ──событие──▶ Presenter ──вызов──▶ Task ──▶ Store
+                     ▲                   │  └─▶ api/
+                     └────результат──────┘
 ```
 
+- **Задача — обычная функция** (TypeScript): параметры → тело → `return`. Не thunk, не сага, не хук,
+  не класс и не метод store. Задача может быть `async`.
+- **Название — глагол**, описывающий действие: `logout`, `unsubscribe`, `findShows`.
+  Один файл — одна задача, имя файла совпадает с именем функции: `tasks/findShows.ts`.
+- **Расположение:** каталог `tasks/` на том же уровне, что и `usePresenter.ts`: `ComponentName/logic/tasks/`.
+- **Одна задача — одна функция снаружи.** Внутри её можно разбить на сколько угодно мелких функций
+  (и файлов), но вызывающий видит один вызов. Самостоятельный кусок, нужный в разных сценариях,
+  выносится в отдельную задачу и вызывается из этой как обычная функция (`logout` → `unsubscribeFromPush`).
+- **В задаче нет React:** ни хуков, ни JSX, ни импортов из `react`, ни компонентов, ни локального
+  состояния UI, ни навигации. Если переписать UI на другой фреймворк, переписываются view и presenter,
+  а задачи остаются почти без изменений. Если в задаче понадобился хук — этот кусок относится к presenter,
+  а задача получает из него готовые значения параметрами.
+- **Со store задача работает напрямую:** импортирует экземпляр store и вызывает его
+  (`store.getState()`, `store.dispatch(...)`). Задача — контроллер: ей доступен любой store / домен.
+  Посредники (`redux-thunk`, `createAsyncThunk`, `redux-saga`) не используем — они мешают `await`
+  и возврату результата.
+- **Абстракцию над store не вводим заранее.** Интерфейс, адаптер или передачу store параметром
+  добавляем только при конкретной потребности (несколько реализаций, реальная миграция,
+  сложности с тестами), а не ради гипотетической смены библиотеки.
+- **С внешним миром задача говорит через `src/api/`:** вызывает функции API-клиента
+  (`searchShows(query, signal)`), а не `fetch`. Задача не знает, HTTP это или веб-сокеты.
+- **Задача возвращает результат** вызывающему. Presenter дожидается её через `await` и по результату
+  решает, что показать: ошибку, редирект, новое состояние кнопки.
+
 ```ts
-// Pagination/logic/tasks/goToNextPage.ts — чистый TypeScript, без React и Redux
-import type { PaginationStore } from './types';
+// SearchPage/logic/tasks/findShows.ts — без React, store импортируется напрямую
+import { searchShows } from '@src/api/tvmaze';
+import { store } from '@src/store/store';
+import { resultsReceived } from '@src/store/shows/showsSlice';
 
-export const goToNextPage = (store: PaginationStore) => {
-  const page = store.getPage();
-  const canGoNext = page < store.getPageCount();
+type FindShowsResult = { error: string | null };
 
-  if (!canGoNext) {
-    return;
+export const findShows = async (query: string): Promise<FindShowsResult> => {
+  try {
+    const items = await searchShows(query);
+    store.dispatch(resultsReceived({ query, items }));
+
+    return { error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    return { error: message };
   }
-
-  store.changePage(page + 1);
 };
 ```
 
-`goToPreviousPage.ts` — аналогично.
-
 ```ts
-// Pagination/logic/usePresenter.ts — связывает задачи с Redux
-import { useAppSelector, useAppStore } from '@src/store/hooks';
-import { selectCurrentPage, selectPageCount } from '@src/store/shows/selectors';
-import { pageChanged } from '@src/store/shows/showsSlice';
-import { goToNextPage } from './tasks/goToNextPage';
-import { goToPreviousPage } from './tasks/goToPreviousPage';
-import type { PaginationStore } from './tasks/types';
+// SearchPage/logic/usePresenter.ts — ждёт задачу, loading/error держит локально
+import { useState } from 'react';
+import { findShows } from './tasks/findShows';
 
 export const usePresenter = () => {
-  const store = useAppStore();
-  // Для отображения — подписка через useAppSelector (реактивно).
-  const page = useAppSelector(selectCurrentPage);
-  const pageCount = useAppSelector(selectPageCount);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Для задач — порт: getState() читается в момент клика, dispatch без useAppDispatch.
-  const paginationStore: PaginationStore = {
-    getPage: () => selectCurrentPage(store.getState()),
-    getPageCount: () => selectPageCount(store.getState()),
-    changePage: (nextPage) => store.dispatch(pageChanged(nextPage)),
+  const handleSearch = async (query: string) => {
+    setIsLoading(true);
+    const result = await findShows(query);
+    setIsLoading(false);
+    setError(result.error);
   };
 
-  const isVisible = pageCount > 1;
-  const label = `Page ${page} of ${pageCount}`;
-  const handlePrev = () => goToPreviousPage(paginationStore);
-  const handleNext = () => goToNextPage(paginationStore);
+  return { isLoading, error, handleSearch };
+};
+```
 
-  return { isVisible, label, handlePrev, handleNext };
+#### Presenter и store
+
+- Presenter **не содержит бизнес-логику** — её выносим в задачи. Presenter готовит данные для view,
+  держит локальное состояние UI, вызывает задачи и выполняет навигацию.
+- **Чтение** store из presenter — можно и нужно: данные для view читаем через `useAppSelector`.
+  Он подписывает компонент на store, и view перерисовывается при изменении.
+  `store.getState()` — разовый снимок без подписки: для отображения не подходит.
+- **Запись** в store из presenter — можно, если она примитивна: один `dispatch` без условий и
+  последовательности шагов (например, смена страницы). Как только запись обрастает логикой
+  (проверки, несколько шагов, вызов API) — это сигнал вынести её в задачу.
+- **Loading и error** одного действия, нужные только этому компоненту, держим в presenter (`useState`),
+  а не в store. В store кладём то, что нужно нескольким компонентам (например, результаты поиска читают
+  список, фильтр и пагинация).
+
+```ts
+// Pagination/logic/usePresenter.ts — примитивная запись, задача не нужна
+export const usePresenter = () => {
+  const dispatch = useAppDispatch();
+  const page = useAppSelector(selectCurrentPage);
+
+  const handleNext = () => dispatch(pageChanged(page + 1));
+
+  return { page, handleNext };
 };
 ```
 
 ## 4. Код, который не является компонентом
 
-- Вызовы API — в `src/api/`. Presenter не вызывает `fetch` напрямую, только функции из `src/api/`.
+- Вызовы API — в `src/api/`. Функции из `src/api/` вызывают задачи (`tasks/`); `fetch` напрямую
+  не вызывает никто, кроме `src/api/`.
 - Типы лежат рядом с тем, к чему относятся: типы view/компонента — в его каталоге,
   типы API — в `src/api/`.
 - Общий принцип (colocation): код лежит как можно ближе к месту использования; только когда он
@@ -185,18 +203,21 @@ export const usePresenter = () => {
 
 - Store глобальный, поэтому лежит на уровне `src/store/`:
   - `store.ts` — конфигурация store и типы `RootState`, `AppDispatch`,
-  - `hooks.ts` — типизированные `useAppDispatch`, `useAppSelector` и `useAppStore`,
+  - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
   - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`) и селекторами (`selectors.ts`).
-- С Redux работает только presenter (`logic/usePresenter.ts`). View и задачи (`tasks/`) никогда
-  не импортируют store.
-- Используем только типизированные хуки из `src/store/hooks.ts`, а не «голые» `useSelector`/`useDispatch`/`useStore`.
-  Когда реактивность не нужна, вместо хуков используем `store.getState()`/`store.dispatch()`
-  (см. «Работа со store в задачах» в §3).
+- Store — это база данных: состояние и именованные операции записи/чтения в терминах предметной
+  области (`pageChanged`, `searchCleared`, селекторы). Бизнес-сценариев (последовательность шагов,
+  вызовы API, проверки) в store нет — они в задачах.
+- С store работают presenter (через хуки) и задачи (напрямую через экземпляр `store`).
+  View никогда не импортирует store.
+- В presenter используем только типизированные хуки из `src/store/hooks.ts`, а не «голые»
+  `useSelector`/`useDispatch`. Задачи хуки не используют: `store.getState()` и `store.dispatch(...)`.
 - Производные данные (фильтрация, пагинация, уникальные значения) вычисляем в селекторах (`createSelector`),
   а не в компонентах.
-- Асинхронные операции — `createAsyncThunk`, который вызывает функции из `src/api/`.
-- Локальное состояние UI, которое не нужно другим компонентам (например, значение инпута), остаётся
-  в presenter (`useState`).
+- Thunk и саги (`createAsyncThunk`, `redux-thunk`, `redux-saga`) не используем: асинхронные операции —
+  это задачи, которые вызывают функции из `src/api/` и пишут результат в store.
+- Локальное состояние UI, которое не нужно другим компонентам (значение инпута, loading/error одного
+  действия), остаётся в presenter (`useState`).
 
 ## 6. Стили и тесты
 
@@ -208,10 +229,11 @@ export const usePresenter = () => {
 - У каждого файла `.ts`/`.tsx` в `src/` есть свой тест. Исключения: стили (`*.css`), файлы только
   с типами (`types.ts`), точка входа `main.tsx` и тестовые фикстуры/хелперы (`test*.ts(x)`,
   например `testShows.ts`, `testStore.tsx`).
-- View тестируем с замоканным `usePresenter` (`vi.mock('./usePresenter')`), presenter — через
-  `renderHookWithStore` из `@src/store/testStore` (настоящий store, API замокан).
-- Задачи тестируем как обычные функции, без store и `renderHook`: `tasks/goToNextPage.test.ts` рядом с
-  `tasks/goToNextPage.ts`, порт store — обычный объект с `vi.fn()`.
+- View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`), presenter — через
+  `renderHookWithStore` из `@src/store/testStore` с замоканными задачами (`vi.mock('./tasks/findShows')`).
+- Задачи тестируем как обычные функции, без React и `renderHook`: `tasks/findShows.test.ts` рядом с
+  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/tvmaze')`), результат проверяем по возвращаемому
+  значению и по `store.getState()`.
 
 ```
 SearchBar/
@@ -222,8 +244,8 @@ SearchBar/
     usePresenter.ts
     usePresenter.test.ts
     tasks/
-      submitQuery.ts
-      submitQuery.test.ts
+      findShows.ts
+      findShows.test.ts
 ```
 
 ## 7. Размер файлов

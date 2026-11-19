@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useAppDispatch, useAppSelector, useAppStore } from './hooks';
+import { useAppDispatch, useAppSelector } from './hooks';
 import { draftChanged } from './shows/showsSlice';
 import { renderHookWithStore } from './testStore';
 
@@ -19,11 +19,5 @@ describe('store hooks', () => {
     });
 
     expect(store.getState().shows.draft).toBe('lost');
-  });
-
-  it('useAppStore returns the store from the Provider', () => {
-    const { result, store } = renderHookWithStore(useAppStore);
-
-    expect(result.current).toBe(store);
   });
 });
