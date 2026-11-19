@@ -172,8 +172,13 @@ export const usePresenter = () => {
 - Несколько шагов вызываем **по очереди** (`await` одной задачи за другой) — в обработчике или внутри
   задачи. Порядок действий виден в коде. Когда много эффектов подписано на разные поля, неясно,
   что за чем происходит и что запустило загрузку.
-- Store меняем **только по результату**: новая страница и её данные записываются вместе и только после
-  успешной загрузки. Если загрузка не удалась, store остаётся прежним — откатывать нечего.
+- Изменения store при ошибке должны быть обратимы. Два варианта:
+  - **предпочтительно — запись по результату:** новая страница и её данные записываются вместе и только
+    после успешной загрузки; если загрузка не удалась, store остаётся прежним — откатывать нечего
+    (`loadShowsPage` ниже);
+  - **допустимо — оптимистичная запись с откатом** в той же задаче: сначала меняем `page`, при ошибке
+    возвращаем прежнее значение (`goToPage` ниже). В явном подходе откат безопасен: на `page` не подписан
+    ни один эффект. В реактивном откат снова запустил бы эффект и загрузку.
 - `useEffect` не используем для запуска сценариев по изменению store или пропсов. Допустимо:
   вызов задачи при монтировании и подписка на внешние источники (таймер, события окна) с cleanup.
   Debounce — таймер в обработчике ввода, а не эффект на изменение `query`.
@@ -225,6 +230,57 @@ const handleNext = async () => {
   setError(result.error);
 };
 ```
+
+Оптимистичная запись с откатом и задача, которая вызывает другую задачу:
+
+```ts
+// ✅ SearchPage/logic/tasks/goToPage.ts
+import { store } from '@src/store/store';
+import { selectPage } from '@src/store/shows/selectors';
+import { pageChanged } from '@src/store/shows/showsSlice';
+import { loadShows } from './loadShows';
+
+type GoToPageResult = { error: string | null };
+
+export const goToPage = async (nextPage: number): Promise<GoToPageResult> => {
+  const currentPage = selectPage(store.getState());
+  store.dispatch(pageChanged(nextPage));
+
+  // loadShows читает page из store и возвращает { error }.
+  const result = await loadShows();
+
+  if (result.error) {
+    // Откат возможен: на смену page не подписан ни один эффект.
+    store.dispatch(pageChanged(currentPage));
+  }
+
+  return result;
+};
+```
+
+```ts
+// ✅ SearchPage/logic/tasks/goToNextPage.ts — проверка границы и вызов другой задачи
+import { store } from '@src/store/store';
+import { selectPage, selectPageCount } from '@src/store/shows/selectors';
+import { goToPage } from './goToPage';
+
+export const goToNextPage = async () => {
+  const state = store.getState();
+  const nextPage = selectPage(state) + 1;
+  const isAfterLastPage = nextPage > selectPageCount(state);
+
+  if (isAfterLastPage) {
+    return { error: null };
+  }
+
+  const result = await goToPage(nextPage);
+
+  return result;
+};
+```
+
+Пока идёт загрузка, UI уже показывает новый номер страницы — кнопки пагинации на это время блокируем
+(`isLoading` в presenter).
 
 #### Presenter и store
 
