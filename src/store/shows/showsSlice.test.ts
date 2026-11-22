@@ -1,23 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   draftChanged,
-  sortChanged,
   genreReset,
   genreSelected,
   initialState,
   pageChanged,
   resultsReceived,
-  resultsRestored,
   searchCleared,
   searchFailed,
   searchStarted,
   showsReducer,
+  sortChanged,
   type ShowsState,
 } from './showsSlice';
-import { CACHE_LIMIT } from './searchCache';
-import { testShows } from './testShows';
-
-const received = (query = 'murder') => resultsReceived({ query, items: testShows });
+import { makeSearchPage, testShows } from './testShows';
 
 describe('showsSlice', () => {
   it('starts empty and idle', () => {
@@ -28,71 +24,55 @@ describe('showsSlice', () => {
     const state: ShowsState = { ...initialState, selectedGenre: 'Crime', page: 3 };
     const next = showsReducer(state, searchStarted('murder'));
 
-    expect(next).toMatchObject({ status: 'loading', query: 'murder', selectedGenre: null, page: 1 });
+    expect(next).toMatchObject({ status: 'loading', query: 'murder', selectedGenre: null, page: 1, error: null });
   });
 
-  it('stores received results', () => {
-    const next = showsReducer(showsReducer(initialState, searchStarted('murder')), received());
+  it('stores the page sent by the server', () => {
+    const page = makeSearchPage({ query: 'murder', items: testShows.slice(0, 3), page: 2, pageCount: 3, genres: ['Crime'] });
+    const next = showsReducer(showsReducer(initialState, searchStarted('murder')), resultsReceived(page));
 
-    expect(next.status).toBe('succeeded');
-    expect(next.items).toHaveLength(testShows.length);
+    expect(next).toMatchObject({
+      status: 'succeeded',
+      query: 'murder',
+      items: page.items,
+      page: 2,
+      pageCount: 3,
+      genres: ['Crime'],
+      error: null,
+    });
   });
 
-  it('stores error on failure', () => {
-    let state = showsReducer(initialState, searchStarted('murder'));
-    state = showsReducer(state, searchFailed('boom'));
+  it('stores the error on failure and drops the results', () => {
+    const withResults = showsReducer(initialState, resultsReceived(makeSearchPage({ items: testShows, pageCount: 3 })));
+    const next = showsReducer(withResults, searchFailed('boom'));
 
-    expect(state).toMatchObject({ status: 'failed', error: 'boom', items: [] });
+    expect(next).toMatchObject({ status: 'failed', error: 'boom', items: [], pageCount: 0 });
   });
 
-  it('selecting and resetting genre goes back to first page', () => {
+  it('selecting and resetting the genre goes back to the first page', () => {
     const state: ShowsState = { ...initialState, page: 2 };
 
     expect(showsReducer(state, genreSelected('Comedy'))).toMatchObject({ selectedGenre: 'Comedy', page: 1 });
     expect(showsReducer(state, genreReset())).toMatchObject({ selectedGenre: null, page: 1 });
   });
 
-  it('caches responses by normalized query', () => {
-    const state = showsReducer(initialState, received(' Murder '));
+  it('changes the sort order and goes back to the first page', () => {
+    const state: ShowsState = { ...initialState, page: 3 };
 
-    expect(state.cache).toEqual([{ key: 'murder', shows: testShows }]);
+    expect(showsReducer(state, sortChanged('rating'))).toMatchObject({ sortBy: 'rating', page: 1 });
   });
 
-  it(`keeps at most ${CACHE_LIMIT} cached responses`, () => {
-    let state = initialState;
-    for (let index = 0; index <= CACHE_LIMIT; index++) {
-      state = showsReducer(state, received(`q${index}`));
-    }
-
-    expect(state.cache).toHaveLength(CACHE_LIMIT);
-    expect(state.cache[0].key).toBe('q1');
-  });
-
-  it('restores cached results and goes back to the first page of all genres', () => {
-    const state = showsReducer(
-      { ...initialState, selectedGenre: 'Crime', page: 2, status: 'loading' },
-      resultsRestored({ query: 'banana', items: testShows }),
-    );
-
-    expect(state).toMatchObject({ status: 'succeeded', query: 'banana', page: 1, items: testShows });
-    expect(state.selectedGenre).toBeNull();
-  });
-
-  it('changes page and clears search but keeps cache, field text and sort order', () => {
-    const cache = [{ key: 'murder', shows: testShows }];
-    const state: ShowsState = { ...initialState, items: testShows, cache, draft: ' ', sortBy: 'rating' };
-
+  it('changes the page', () => {
     expect(showsReducer(initialState, pageChanged(2)).page).toBe(2);
-    expect(showsReducer(state, searchCleared())).toEqual({ ...initialState, cache, draft: ' ', sortBy: 'rating' });
+  });
+
+  it('clears the search but keeps the field text and the sort order', () => {
+    const state: ShowsState = { ...initialState, items: testShows, query: 'q', draft: ' ', sortBy: 'rating' };
+
+    expect(showsReducer(state, searchCleared())).toEqual({ ...initialState, draft: ' ', sortBy: 'rating' });
   });
 
   it('stores the search field text', () => {
     expect(showsReducer(initialState, draftChanged('Lost')).draft).toBe('Lost');
-  });
-
-  it('changes sort order and goes back to first page', () => {
-    const state: ShowsState = { ...initialState, page: 3 };
-
-    expect(showsReducer(state, sortChanged('rating'))).toMatchObject({ sortBy: 'rating', page: 1 });
   });
 });

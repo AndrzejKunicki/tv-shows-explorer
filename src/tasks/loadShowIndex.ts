@@ -1,4 +1,4 @@
-import { fetchShowIndex } from '@src/api/tvmaze';
+import { fetchShowIndex } from '@src/api/showsApi';
 import { loadFeed } from './loadFeed';
 
 /** Loads the first page of the TVMaze index: well known, popular shows. */

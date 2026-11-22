@@ -1,13 +1,16 @@
 import { showsStore } from '@src/store/shows/showsStore';
+import { loadResults } from '@src/tasks/loadResults';
 
 /** Filters the results by the genre, or shows all genres again when it is already selected. */
-export const toggleGenre = (genre: string) => {
+export const toggleGenre = async (genre: string) => {
   const isSelected = showsStore.getSelectedGenre() === genre;
   if (isSelected) {
     showsStore.resetGenre();
-
-    return;
+  } else {
+    showsStore.selectGenre(genre);
   }
 
-  showsStore.selectGenre(genre);
+  const result = await loadResults();
+
+  return result;
 };

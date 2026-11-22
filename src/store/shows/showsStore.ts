@@ -1,17 +1,22 @@
-import type { Show } from '@src/api/types';
+import type { SearchPage, SearchParams, SortBy } from '@src/api/types';
 import { store } from '@src/store/store';
-import { findCachedResults, toCacheKey } from './searchCache';
-import { selectCache, selectCurrentPage, selectPageCount, selectSelectedGenre } from './selectors';
+import {
+  selectPage,
+  selectPageCount,
+  selectQuery,
+  selectSelectedGenre,
+  selectSortBy,
+} from './selectors';
 import {
   draftChanged,
   genreReset,
   genreSelected,
   pageChanged,
   resultsReceived,
-  resultsRestored,
   searchCleared,
   searchFailed,
   searchStarted,
+  sortChanged,
 } from './showsSlice';
 
 /**
@@ -19,17 +24,31 @@ import {
  * tasks meet the Redux API, so switching the state library changes this file, not the tasks.
  */
 export const showsStore = {
-  getPage: () => selectCurrentPage(store.getState()),
+  getPage: () => selectPage(store.getState()),
   getPageCount: () => selectPageCount(store.getState()),
   getSelectedGenre: () => selectSelectedGenre(store.getState()),
-  /** Results already fetched for the same normalized query, or `null`. */
-  getCachedResults: (query: string) => findCachedResults(selectCache(store.getState()), toCacheKey(query)),
+  getSortBy: () => selectSortBy(store.getState()),
+  /** What the current results page is made of: query, genre, sort order and page. */
+  getSearchParams: (): SearchParams => {
+    const state = store.getState();
+    const params = {
+      query: selectQuery(state),
+      genre: selectSelectedGenre(state),
+      sort: selectSortBy(state),
+      page: selectPage(state),
+    };
+
+    return params;
+  },
 
   setDraft: (text: string) => {
     store.dispatch(draftChanged(text));
   },
   setPage: (page: number) => {
     store.dispatch(pageChanged(page));
+  },
+  setSort: (sort: SortBy) => {
+    store.dispatch(sortChanged(sort));
   },
   selectGenre: (genre: string) => {
     store.dispatch(genreSelected(genre));
@@ -43,11 +62,8 @@ export const showsStore = {
   startSearch: (query: string) => {
     store.dispatch(searchStarted(query));
   },
-  receiveResults: (query: string, items: Show[]) => {
-    store.dispatch(resultsReceived({ query, items }));
-  },
-  restoreResults: (query: string, items: Show[]) => {
-    store.dispatch(resultsRestored({ query, items }));
+  receiveResults: (page: SearchPage) => {
+    store.dispatch(resultsReceived(page));
   },
   failSearch: (message: string) => {
     store.dispatch(searchFailed(message));

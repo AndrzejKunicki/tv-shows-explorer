@@ -1,76 +1,49 @@
 import { describe, expect, it } from 'vitest';
+import { initialState as discoverInitialState } from '@src/store/discover/discoverSlice';
 import type { RootState } from '@src/store/store';
 import {
-  selectCache,
-  selectCurrentPage,
-  selectFilteredShows,
+  selectDraft,
+  selectError,
   selectGenres,
+  selectItems,
+  selectPage,
   selectPageCount,
-  selectPagedShows,
+  selectQuery,
+  selectSelectedGenre,
+  selectSortBy,
+  selectStatus,
 } from './selectors';
-import { initialState as discoverInitialState } from '@src/store/discover/discoverSlice';
 import { initialState, type ShowsState } from './showsSlice';
-import { makeShow, testShows } from './testShows';
+import { testShows } from './testShows';
 
 const rootState = (shows: Partial<ShowsState>): RootState => ({
-  shows: { ...initialState, items: testShows, status: 'succeeded', ...shows },
+  shows: { ...initialState, ...shows },
   discover: discoverInitialState,
 });
 
-const ids = (shows: { id: number }[]) => shows.map((show) => show.id);
-
 describe('shows selectors', () => {
-  it('collects unique sorted genres', () => {
-    expect(selectGenres(rootState({}))).toEqual(['Adventure', 'Comedy', 'Crime', 'Drama', 'Mystery']);
+  it('read the results page sent by the server', () => {
+    const state = rootState({ items: testShows, page: 2, pageCount: 3, genres: ['Crime', 'Drama'] });
+
+    expect(selectItems(state)).toBe(testShows);
+    expect(selectPage(state)).toBe(2);
+    expect(selectPageCount(state)).toBe(3);
+    expect(selectGenres(state)).toEqual(['Crime', 'Drama']);
   });
 
-  it('returns all shows without selected genre', () => {
-    expect(selectFilteredShows(rootState({}))).toHaveLength(testShows.length);
+  it('read the search parameters', () => {
+    const state = rootState({ query: 'lost', selectedGenre: 'Drama', sortBy: 'rating', draft: 'los' });
+
+    expect(selectQuery(state)).toBe('lost');
+    expect(selectSelectedGenre(state)).toBe('Drama');
+    expect(selectSortBy(state)).toBe('rating');
+    expect(selectDraft(state)).toBe('los');
   });
 
-  it('filters shows by selected genre', () => {
-    expect(ids(selectFilteredShows(rootState({ selectedGenre: 'Comedy' })))).toEqual([2, 4]);
-  });
+  it('read the status and the error', () => {
+    const state = rootState({ status: 'failed', error: 'boom' });
 
-  it('paginates by 3 items', () => {
-    expect(selectPageCount(rootState({}))).toBe(3);
-    expect(ids(selectPagedShows(rootState({ page: 1 })))).toEqual([1, 2, 3]);
-    expect(ids(selectPagedShows(rootState({ page: 3 })))).toEqual([7]);
-  });
-
-  it('paginates the filtered list', () => {
-    const state = rootState({ selectedGenre: 'Crime' });
-
-    expect(selectPageCount(state)).toBe(1);
-    expect(ids(selectPagedShows(state))).toEqual([1, 3, 7]);
-  });
-
-  it('keeps an out-of-range page within the existing pages', () => {
-    expect(selectCurrentPage(rootState({ page: 0 }))).toBe(1);
-    expect(selectCurrentPage(rootState({ page: -2 }))).toBe(1);
-    expect(selectCurrentPage(rootState({ page: 99 }))).toBe(3);
-    expect(selectCurrentPage(rootState({ page: 2, items: [] }))).toBe(1);
-    expect(ids(selectPagedShows(rootState({ page: 99 })))).toEqual([7]);
-  });
-
-  it('has no pages for empty results', () => {
-    expect(selectPageCount(rootState({ items: [] }))).toBe(0);
-  });
-
-  it('sorts by rating on request, unrated shows last', () => {
-    const rated = (id: number, average: number | null) => ({ ...makeShow(id, []), rating: { average } });
-    const items = [rated(1, 6), rated(2, null), rated(3, 9), rated(4, 7.5)];
-
-    expect(ids(selectFilteredShows(rootState({ items })))).toEqual([1, 2, 3, 4]);
-    expect(ids(selectFilteredShows(rootState({ items, sortBy: 'rating' })))).toEqual([3, 4, 1, 2]);
-  });
-});
-
-describe('selectCache', () => {
-  it('returns the cached search responses', () => {
-    const cache = [{ key: 'lost', shows: testShows }];
-    const state: RootState = { shows: { ...initialState, cache }, discover: discoverInitialState };
-
-    expect(selectCache(state)).toBe(cache);
+    expect(selectStatus(state)).toBe('failed');
+    expect(selectError(state)).toBe('boom');
   });
 });

@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     // Locally the API runs on its own port (`npm run dev:server`); the client calls it as /api/...
-    proxy: { '/api': 'http://localhost:3000' },
+    proxy: { '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000' },
   },
   test: {
     projects: [

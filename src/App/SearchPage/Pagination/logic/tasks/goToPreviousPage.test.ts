@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { showsStore } from '@src/store/shows/showsStore';
+import { loadResults } from '@src/tasks/loadResults';
 import { goToPreviousPage } from './goToPreviousPage';
 
+vi.mock('@src/tasks/loadResults', () => ({ loadResults: vi.fn().mockResolvedValue({ error: null }) }));
 vi.mock('@src/store/shows/showsStore', () => ({
   showsStore: { getPage: vi.fn(), setPage: vi.fn() },
 }));
@@ -12,19 +14,22 @@ describe('goToPreviousPage', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the previous page', () => {
+  it('switches to the previous page and loads it', async () => {
     store.getPage.mockReturnValue(2);
 
-    goToPreviousPage();
+    const result = await goToPreviousPage();
 
+    expect(result).toEqual({ error: null });
     expect(store.setPage).toHaveBeenCalledWith(1);
+    expect(loadResults).toHaveBeenCalledTimes(1);
   });
 
-  it('does not go before the first page', () => {
+  it('does not go before the first page', async () => {
     store.getPage.mockReturnValue(1);
 
-    goToPreviousPage();
+    await goToPreviousPage();
 
     expect(store.setPage).not.toHaveBeenCalled();
+    expect(loadResults).not.toHaveBeenCalled();
   });
 });

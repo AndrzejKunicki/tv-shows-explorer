@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "npm run dev --prefix server",
     "build": "tsc -b && vite build",
+    "typecheck:server": "npm run typecheck --prefix server",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",

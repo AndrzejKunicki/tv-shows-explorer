@@ -1,4 +1,4 @@
-import { fetchShowIndex } from '@src/api/tvmaze';
+import { fetchShowIndex } from '@src/api/showsApi';
 import { loadFeed } from '@src/tasks/loadFeed';
 import { pickGemPages } from './pickGemPages';
 
