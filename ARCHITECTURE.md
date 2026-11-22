@@ -112,30 +112,35 @@ View ──событие──▶ Presenter ──вызов──▶ Task ─�
   состояния UI, ни навигации. Если переписать UI на другой фреймворк, переписываются view и presenter,
   а задачи остаются почти без изменений. Если в задаче понадобился хук — этот кусок относится к presenter,
   а задача получает из него готовые значения параметрами.
-- **Со store задача работает напрямую:** импортирует экземпляр store и вызывает его
-  (`store.getState()`, `store.dispatch(...)`). Задача — контроллер: ей доступен любой store / домен.
-  Посредники (`redux-thunk`, `createAsyncThunk`, `redux-saga`) не используем — они мешают `await`
-  и возврату результата.
-- **Абстракцию над store не вводим заранее.** Интерфейс, адаптер или передачу store параметром
-  добавляем только при конкретной потребности (несколько реализаций, реальная миграция,
-  сложности с тестами), а не ради гипотетической смены библиотеки.
+- **Со store задача работает напрямую через фасад домена:** импортирует объект store домена
+  (`showsStore`, `discoverStore`) и вызывает его именованные операции чтения/записи —
+  `showsStore.getPage()`, `showsStore.setPage(2)`, `discoverStore.setFeed('index', shows)`.
+  Задача — контроллер: ей доступен любой store / домен. Посредники (`redux-thunk`, `createAsyncThunk`,
+  `redux-saga`) не используем — они мешают `await` и возврату результата.
+- **Фасад store** — `src/store/<domain>/<domain>Store.ts`: store как база данных — только get/set
+  в терминах предметной области, без сценариев. Это единственное место, где задачи встречаются
+  с API библиотеки (`store.getState()`, `store.dispatch(...)`, экшены, селекторы). При смене библиотеки
+  (Redux → Zustand/MobX) переписывается фасад, а задачи остаются прежними. Presenter читает store
+  через хуки (`useAppSelector`) и фасад не использует — ему нужна реактивность.
+- **Других абстракций над store заранее не вводим.** Универсальные адаптеры, интерфейсы или передачу store
+  параметром добавляем только при конкретной потребности (несколько реализаций, реальная миграция,
+  сложности с тестами).
 - **С внешним миром задача говорит через `src/api/`:** вызывает функции API-клиента
   (`searchShows(query, signal)`), а не `fetch`. Задача не знает, HTTP это или веб-сокеты.
 - **Задача возвращает результат** вызывающему. Presenter дожидается её через `await` и по результату
   решает, что показать: ошибку, редирект, новое состояние кнопки.
 
 ```ts
-// SearchPage/logic/tasks/findShows.ts — без React, store импортируется напрямую
+// SearchPage/logic/tasks/findShows.ts — без React, store домена импортируется напрямую
 import { searchShows } from '@src/api/tvmaze';
-import { store } from '@src/store/store';
-import { resultsReceived } from '@src/store/shows/showsSlice';
+import { showsStore } from '@src/store/shows/showsStore';
 
 type FindShowsResult = { error: string | null };
 
 export const findShows = async (query: string): Promise<FindShowsResult> => {
   try {
     const items = await searchShows(query);
-    store.dispatch(resultsReceived({ query, items }));
+    showsStore.receiveResults(query, items);
 
     return { error: null };
   } catch (error) {
@@ -202,8 +207,7 @@ const handleNext = () => dispatch(pageChanged(page + 1));
 ```ts
 // ✅ Явно: SearchPage/logic/tasks/loadShowsPage.ts
 import { fetchShowIndex } from '@src/api/tvmaze';
-import { store } from '@src/store/store';
-import { showsPageLoaded } from '@src/store/shows/showsSlice';
+import { showsStore } from '@src/store/shows/showsStore';
 
 type LoadShowsPageResult = { error: string | null };
 
@@ -211,7 +215,7 @@ export const loadShowsPage = async (page: number): Promise<LoadShowsPageResult> 
   try {
     const shows = await fetchShowIndex(page);
     // Страница и данные меняются вместе и только при успехе.
-    store.dispatch(showsPageLoaded({ page, shows }));
+    showsStore.setPageWithShows(page, shows);
 
     return { error: null };
   } catch (error) {
@@ -237,23 +241,21 @@ const handleNext = async () => {
 
 ```ts
 // ✅ SearchPage/logic/tasks/goToPage.ts
-import { store } from '@src/store/store';
-import { selectPage } from '@src/store/shows/selectors';
-import { pageChanged } from '@src/store/shows/showsSlice';
+import { showsStore } from '@src/store/shows/showsStore';
 import { loadShows } from './loadShows';
 
 type GoToPageResult = { error: string | null };
 
 export const goToPage = async (nextPage: number): Promise<GoToPageResult> => {
-  const currentPage = selectPage(store.getState());
-  store.dispatch(pageChanged(nextPage));
+  const currentPage = showsStore.getPage();
+  showsStore.setPage(nextPage);
 
   // loadShows читает page из store и возвращает { error }.
   const result = await loadShows();
 
   if (result.error) {
     // Откат возможен: на смену page не подписан ни один эффект.
-    store.dispatch(pageChanged(currentPage));
+    showsStore.setPage(currentPage);
   }
 
   return result;
@@ -262,14 +264,12 @@ export const goToPage = async (nextPage: number): Promise<GoToPageResult> => {
 
 ```ts
 // ✅ SearchPage/logic/tasks/goToNextPage.ts — проверка границы и вызов другой задачи
-import { store } from '@src/store/store';
-import { selectPage, selectPageCount } from '@src/store/shows/selectors';
+import { showsStore } from '@src/store/shows/showsStore';
 import { goToPage } from './goToPage';
 
 export const goToNextPage = async () => {
-  const state = store.getState();
-  const nextPage = selectPage(state) + 1;
-  const isAfterLastPage = nextPage > selectPageCount(state);
+  const nextPage = showsStore.getPage() + 1;
+  const isAfterLastPage = nextPage > showsStore.getPageCount();
 
   if (isAfterLastPage) {
     return { error: null };
@@ -347,14 +347,16 @@ export const usePresenter = () => {
 - Store глобальный, поэтому лежит на уровне `src/store/`:
   - `store.ts` — конфигурация store и типы `RootState`, `AppDispatch`,
   - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
-  - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`) и селекторами (`selectors.ts`).
+  - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`), селекторами (`selectors.ts`)
+    и фасадом для задач (`showsStore.ts`).
 - Store — это база данных: состояние и именованные операции записи/чтения в терминах предметной
   области (`pageChanged`, `searchCleared`, селекторы). Бизнес-сценариев (последовательность шагов,
   вызовы API, проверки) в store нет — они в задачах.
-- С store работают presenter (через хуки) и задачи (напрямую через экземпляр `store`).
+- С store работают presenter (через хуки) и задачи (через фасад домена `showsStore`, `discoverStore`).
   View никогда не импортирует store.
 - В presenter используем только типизированные хуки из `src/store/hooks.ts`, а не «голые»
-  `useSelector`/`useDispatch`. Задачи хуки не используют: `store.getState()` и `store.dispatch(...)`.
+  `useSelector`/`useDispatch`. Задачи хуки не используют и не импортируют `store`, экшены и селекторы
+  напрямую — только фасад; `store.getState()` и `store.dispatch(...)` вызывает только фасад.
 - Производные данные (фильтрация, пагинация, уникальные значения) вычисляем в селекторах (`createSelector`),
   а не в компонентах.
 - Thunk и саги (`createAsyncThunk`, `redux-thunk`, `redux-saga`) не используем: асинхронные операции —
@@ -375,10 +377,12 @@ export const usePresenter = () => {
 - View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`), presenter — через
   `renderHookWithStore` из `@src/store/testStore` с замоканными задачами (`vi.mock('./tasks/findShows')`).
 - Задачи тестируем как обычные функции, без React и `renderHook`: `tasks/findShows.test.ts` рядом с
-  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/tvmaze')`), результат проверяем по возвращаемому
-  значению и по `store.getState()`.
-  Чтобы тесты не делили один экземпляр `store`, мокаем модуль store фабрикой `mockStoreModule` из
-  `@src/store/testAppStore`, а в `beforeEach` берём свежий store через `resetAppStore()`.
+  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/tvmaze')`).
+  - Обычно мокаем фасад (`vi.mock('@src/store/shows/showsStore')`) и проверяем вызовы его операций —
+    такой тест не зависит от библиотеки store.
+  - Когда важно реальное поведение данных (кэш, гонки запросов), используем настоящий store: мокаем модуль
+    store фабрикой `mockStoreModule` из `@src/store/testAppStore`, в `beforeEach` берём свежий store
+    через `resetAppStore()` и проверяем `store.getState()`. Так же тестируем сам фасад.
 
 ```
 SearchBar/

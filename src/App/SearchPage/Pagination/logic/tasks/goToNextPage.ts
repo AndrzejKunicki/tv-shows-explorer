@@ -1,15 +1,12 @@
-import { selectCurrentPage, selectPageCount } from '@src/store/shows/selectors';
-import { pageChanged } from '@src/store/shows/showsSlice';
-import { store } from '@src/store/store';
+import { showsStore } from '@src/store/shows/showsStore';
 
 /** Shows the next page of the results, unless the last one is already shown. */
 export const goToNextPage = () => {
-  const state = store.getState();
-  const page = selectCurrentPage(state);
-  const canGoNext = page < selectPageCount(state);
+  const page = showsStore.getPage();
+  const canGoNext = page < showsStore.getPageCount();
   if (!canGoNext) {
     return;
   }
 
-  store.dispatch(pageChanged(page + 1));
+  showsStore.setPage(page + 1);
 };

@@ -1,7 +1,6 @@
 import type { Show } from '@src/api/types';
-import { feedFailed, feedLoaded, feedRequested, type FeedName } from '@src/store/discover/discoverSlice';
-import { selectFeedStatus } from '@src/store/discover/selectors';
-import { store } from '@src/store/store';
+import type { FeedName } from '@src/store/discover/discoverSlice';
+import { discoverStore } from '@src/store/discover/discoverStore';
 
 export type LoadFeedResult = { error: string | null };
 
@@ -10,22 +9,22 @@ export type LoadFeedResult = { error: string | null };
  * retries it). This also prevents double requests from StrictMode effects.
  */
 export const loadFeed = async (feed: FeedName, load: () => Promise<Show[]>): Promise<LoadFeedResult> => {
-  const status = selectFeedStatus(store.getState(), feed);
+  const status = discoverStore.getFeedStatus(feed);
   const shouldLoad = status === 'idle' || status === 'failed';
   if (!shouldLoad) {
     return { error: null };
   }
 
-  store.dispatch(feedRequested(feed));
+  discoverStore.startFeed(feed);
 
   try {
     const shows = await load();
-    store.dispatch(feedLoaded({ feed, shows }));
+    discoverStore.setFeed(feed, shows);
 
     return { error: null };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    store.dispatch(feedFailed(feed));
+    discoverStore.failFeed(feed);
 
     return { error: message };
   }

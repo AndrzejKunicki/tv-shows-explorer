@@ -1,11 +1,13 @@
-import { selectSelectedGenre } from '@src/store/shows/selectors';
-import { genreReset, genreSelected } from '@src/store/shows/showsSlice';
-import { store } from '@src/store/store';
+import { showsStore } from '@src/store/shows/showsStore';
 
 /** Filters the results by the genre, or shows all genres again when it is already selected. */
 export const toggleGenre = (genre: string) => {
-  const isSelected = selectSelectedGenre(store.getState()) === genre;
-  const action = isSelected ? genreReset() : genreSelected(genre);
+  const isSelected = showsStore.getSelectedGenre() === genre;
+  if (isSelected) {
+    showsStore.resetGenre();
 
-  store.dispatch(action);
+    return;
+  }
+
+  showsStore.selectGenre(genre);
 };
