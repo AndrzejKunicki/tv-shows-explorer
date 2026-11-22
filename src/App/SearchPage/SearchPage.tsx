@@ -1,4 +1,5 @@
 import { Discover } from './Discover/Discover';
+import { Favorites } from './Favorites/Favorites';
 import { GenreChips } from './GenreChips/GenreChips';
 import { Hero } from './Hero/Hero';
 import { Pagination } from './Pagination/Pagination';
@@ -15,6 +16,7 @@ export const SearchPage = () => {
 
   return (
     <section className={styles.page}>
+      <Favorites />
       <ShowReel />
       <Hero />
       <SearchBar />

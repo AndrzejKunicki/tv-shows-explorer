@@ -1,0 +1,59 @@
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, 100%);
+  padding: 10px 10px 10px 16px;
+  font-size: 14px;
+  color: var(--text);
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.9);
+  animation: slide-in 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.toast[data-tone='error'] {
+  border-left-color: var(--danger);
+}
+
+.message {
+  flex: 1;
+}
+
+.close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-radius: 6px;
+}
+
+.close:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

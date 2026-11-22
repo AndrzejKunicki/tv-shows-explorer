@@ -4,6 +4,7 @@ import { SearchPage } from './SearchPage';
 import { usePresenter } from './logic/usePresenter';
 
 vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
+vi.mock('./Favorites/Favorites', () => ({ Favorites: () => <div>Favorites</div> }));
 vi.mock('./ShowReel/ShowReel', () => ({ ShowReel: () => <div>ShowReel</div> }));
 vi.mock('./Hero/Hero', () => ({ Hero: () => <div>Hero</div> }));
 vi.mock('./SearchBar/SearchBar', () => ({ SearchBar: () => <div>SearchBar</div> }));
@@ -22,7 +23,7 @@ describe('SearchPage', () => {
     usePresenterMock.mockReturnValue(presenter);
     const { container } = render(<SearchPage />);
 
-    expect(container.textContent).toBe('ShowReelHeroSearchBarPopularToday');
+    expect(container.textContent).toBe('FavoritesShowReelHeroSearchBarPopularToday');
   });
 
   it('renders the results with their toolbar', () => {

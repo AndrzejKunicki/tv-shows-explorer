@@ -1,4 +1,5 @@
 import type { Show } from '@src/api/types';
+import { FavoriteStar } from '@src/components/FavoriteStar/FavoriteStar';
 import { RatingBadge } from '@src/components/RatingBadge/RatingBadge';
 import styles from './ShowCard.module.css';
 import { usePresenter } from './logic/usePresenter';
@@ -10,6 +11,9 @@ export const ShowCard = (props: { show: Show }) => {
     <article className={styles.card}>
       <div className={styles.media}>
         {rating && <RatingBadge rating={rating} />}
+        <div className={styles.star}>
+          <FavoriteStar show={props.show} />
+        </div>
         {imageUrl ? (
           <img className={styles.image} src={imageUrl} alt={name} loading="lazy" />
         ) : (

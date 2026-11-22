@@ -1,4 +1,8 @@
 .card {
+  position: relative;
+}
+
+.link {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -7,7 +11,15 @@
   border-radius: 10px;
 }
 
-.card:focus-visible {
+/* Above the poster, in the corner opposite the rating */
+.star {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
 }

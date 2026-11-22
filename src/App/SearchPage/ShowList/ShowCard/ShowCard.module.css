@@ -36,6 +36,14 @@
   overflow: hidden;
 }
 
+/* Above the link that covers the whole card, in the corner opposite the rating */
+.star {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
 .image,
 .placeholder {
   display: block;

@@ -1,6 +1,7 @@
 import styles from './App.module.css';
 import { Backdrop } from './Backdrop/Backdrop';
 import { SearchPage } from './SearchPage/SearchPage';
+import { Toaster } from './Toaster/Toaster';
 
 export const App = () => (
   <>
@@ -8,5 +9,6 @@ export const App = () => (
     <main className={styles.app}>
       <SearchPage />
     </main>
+    <Toaster />
   </>
 );

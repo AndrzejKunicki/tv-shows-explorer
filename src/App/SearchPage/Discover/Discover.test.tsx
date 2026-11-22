@@ -4,6 +4,8 @@ import { withPoster } from '@src/store/discover/testState';
 import { Discover } from './Discover';
 import { usePresenter } from './logic/usePresenter';
 
+vi.mock('@src/components/FavoriteStar/FavoriteStar', () => ({ FavoriteStar: () => <button aria-label="star" /> }));
+
 vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 const usePresenterMock = vi.mocked(usePresenter);
 
