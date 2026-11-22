@@ -1,14 +1,5 @@
 import { searchShows } from '@src/api/tvmaze';
-import { findCachedResults, toCacheKey } from '@src/store/shows/searchCache';
-import { selectCache } from '@src/store/shows/selectors';
-import {
-  resultsReceived,
-  resultsRestored,
-  searchCleared,
-  searchFailed,
-  searchStarted,
-} from '@src/store/shows/showsSlice';
-import { store } from '@src/store/store';
+import { showsStore } from '@src/store/shows/showsStore';
 import { cancelSearch, startSearchRequest } from './searchRequest';
 
 export type FindShowsResult = { error: string | null };
@@ -19,24 +10,24 @@ export const findShows = async (rawQuery: string): Promise<FindShowsResult> => {
 
   const query = rawQuery.trim();
   if (!query) {
-    store.dispatch(searchCleared());
+    showsStore.clearSearch();
 
     return { error: null };
   }
 
-  const cached = findCachedResults(selectCache(store.getState()), toCacheKey(query));
+  const cached = showsStore.getCachedResults(query);
   if (cached) {
-    store.dispatch(resultsRestored({ query, items: cached }));
+    showsStore.restoreResults(query, cached);
 
     return { error: null };
   }
 
   const signal = startSearchRequest();
-  store.dispatch(searchStarted(query));
+  showsStore.startSearch(query);
 
   try {
     const items = await searchShows(query, signal);
-    store.dispatch(resultsReceived({ query, items }));
+    showsStore.receiveResults(query, items);
 
     return { error: null };
   } catch (error) {
@@ -46,7 +37,7 @@ export const findShows = async (rawQuery: string): Promise<FindShowsResult> => {
     }
 
     const message = error instanceof Error ? error.message : 'Unknown error';
-    store.dispatch(searchFailed(message));
+    showsStore.failSearch(message);
 
     return { error: message };
   }
