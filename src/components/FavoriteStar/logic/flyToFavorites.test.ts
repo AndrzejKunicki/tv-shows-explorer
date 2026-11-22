@@ -30,9 +30,12 @@ describe('flyToFavorites', () => {
     document.body.innerHTML = '';
   });
 
-  it('flies a star from the button to the counter, removes it and pulses the counter', async () => {
+  it("flies a star from the button to the counter, removes it and makes the counter's star grow", async () => {
     const star = addElement();
     const target = addElement('data-favorites-target');
+    const icon = document.createElement('span');
+    icon.setAttribute('data-favorites-icon', '');
+    target.append(icon);
     let flyingStars = 0;
     animate.mockImplementationOnce(() => {
       flyingStars = document.body.querySelectorAll('div[aria-hidden="true"]').length;
@@ -47,6 +50,7 @@ describe('flyToFavorites', () => {
     expect(animate.mock.calls[0][1]).toMatchObject({ duration: FLY_DURATION_MS });
     expect(document.body.querySelector('div[aria-hidden="true"]')).toBeNull();
     expect(document.querySelector(FAVORITES_TARGET_SELECTOR)).toBe(target);
+    expect(animate.mock.contexts[1]).toBe(icon);
   });
 
   it('resolves and cleans up when the flight is cancelled', async () => {

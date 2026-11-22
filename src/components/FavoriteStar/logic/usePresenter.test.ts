@@ -101,7 +101,7 @@ describe('FavoriteStar usePresenter', () => {
     await act(async () => answer());
     await act(() => result.current.handleClick());
 
-    expect(result.current.isPending).toBe(true);
+    expect(result.current).toMatchObject({ isPending: true, isFilling: true });
     expect(toggleFavoriteMock).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -109,6 +109,6 @@ describe('FavoriteStar usePresenter', () => {
       await click;
     });
 
-    expect(result.current.isPending).toBe(false);
+    expect(result.current).toMatchObject({ isPending: false, isFilling: false });
   });
 });

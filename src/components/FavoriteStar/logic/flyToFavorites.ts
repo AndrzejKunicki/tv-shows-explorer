@@ -1,5 +1,7 @@
 /** The element the star flies to (the favorites counter); marked in its view with this attribute. */
 export const FAVORITES_TARGET_SELECTOR = '[data-favorites-target]';
+/** The star icon inside the counter; it grows when the flying star lands. */
+export const FAVORITES_ICON_SELECTOR = '[data-favorites-icon]';
 export const FLY_DURATION_MS = 650;
 
 const STAR_PATH = 'm12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z';
@@ -27,7 +29,7 @@ const createFlyingStar = (rect: DOMRect) => {
 };
 
 /**
- * Flies a star from the clicked button to the favorites counter, then pulses the counter.
+ * Flies a star from the clicked button to the favorites counter, then makes the counter's star grow.
  * Resolves when the star has arrived; at once when there is nothing to animate (no counter on the page,
  * reduced motion, no Web Animations API). Never rejects: it is decoration and must not break adding.
  */
@@ -63,8 +65,13 @@ export const flyToFavorites = async (from: HTMLElement | null): Promise<void> =>
     star.remove();
   }
 
-  target.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], {
-    duration: 300,
-    easing: 'ease-out',
-  });
+  const icon = target.querySelector<HTMLElement>(FAVORITES_ICON_SELECTOR) ?? target;
+  icon.animate(
+    [
+      { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 transparent)' },
+      { transform: 'scale(1.9)', filter: 'drop-shadow(0 0 6px rgb(242 181 68 / 0.95))', offset: 0.35 },
+      { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 transparent)' },
+    ],
+    { duration: 450, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+  );
 };
