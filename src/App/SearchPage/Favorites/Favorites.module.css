@@ -37,6 +37,8 @@
   width: 18px;
   height: 18px;
   fill: var(--accent);
+  /* Grows from its center when a flying star lands (see flyToFavorites) */
+  transform-origin: center;
 }
 
 .count {

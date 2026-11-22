@@ -14,10 +14,18 @@ const toggleFavoriteMock = vi.mocked(toggleFavorite);
 
 const show = { ...makeShow(1, []), name: 'Lost' };
 
+/** Like the real task after a confirmed add: waits for the given step, then answers. */
+const addConfirmed = () =>
+  toggleFavoriteMock.mockImplementation(async (_show, waitBeforeAdding) => {
+    await waitBeforeAdding?.();
+
+    return { error: null, isFavorite: true };
+  });
+
 describe('FavoriteStar usePresenter', () => {
   beforeEach(() => {
     toggleFavoriteMock.mockReset();
-    vi.mocked(flyToFavorites).mockClear();
+    vi.mocked(flyToFavorites).mockReset().mockResolvedValue(undefined);
   });
 
   it('shows whether the show is a favorite', () => {
@@ -34,18 +42,8 @@ describe('FavoriteStar usePresenter', () => {
     expect(result.current).toMatchObject({ isFavorite: true, label: 'Remove Lost from favorites' });
   });
 
-  it('toggles the favorite and shows a toast with the result', async () => {
-    toggleFavoriteMock.mockResolvedValue({ error: null, isFavorite: true });
-    const { result, store } = renderHookWithStore(() => usePresenter({ show }));
-
-    await act(() => result.current.handleClick());
-
-    expect(toggleFavoriteMock).toHaveBeenCalledWith(show);
-    expect(store.getState().toasts.items).toMatchObject([{ message: '"Lost" added to favorites', tone: 'success' }]);
-  });
-
-  it('flies the star to the counter after a confirmed add, and only then shows the toast', async () => {
-    toggleFavoriteMock.mockResolvedValue({ error: null, isFavorite: true });
+  it('gives the task the flight of this star, and shows the toast only after it', async () => {
+    addConfirmed();
     let toastsWhileFlying = -1;
     const { result, store } = renderHookWithStore(() => usePresenter({ show }));
     const button = document.createElement('button');
@@ -56,20 +54,10 @@ describe('FavoriteStar usePresenter', () => {
 
     await act(() => result.current.handleClick());
 
+    expect(toggleFavoriteMock).toHaveBeenCalledWith(show, expect.any(Function));
     expect(flyToFavorites).toHaveBeenCalledWith(button);
     expect(toastsWhileFlying).toBe(0);
-    expect(store.getState().toasts.items).toHaveLength(1);
-  });
-
-  it('does not fly on remove or on an error', async () => {
-    toggleFavoriteMock.mockResolvedValueOnce({ error: null, isFavorite: false });
-    toggleFavoriteMock.mockResolvedValueOnce({ error: 'API error: 502', isFavorite: false });
-    const { result } = renderHookWithStore(() => usePresenter({ show }));
-
-    await act(() => result.current.handleClick());
-    await act(() => result.current.handleClick());
-
-    expect(flyToFavorites).not.toHaveBeenCalled();
+    expect(store.getState().toasts.items).toMatchObject([{ message: '"Lost" added to favorites', tone: 'success' }]);
   });
 
   it('shows a removal toast', async () => {
@@ -93,9 +81,15 @@ describe('FavoriteStar usePresenter', () => {
   });
 
   it('ignores clicks while the server answers and during the flight', async () => {
-    let answer = (_value: { error: null; isFavorite: boolean }) => {};
+    let answer = () => {};
     let land = () => {};
-    toggleFavoriteMock.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const serverAnswer = new Promise<void>((resolve) => (answer = resolve));
+    toggleFavoriteMock.mockImplementation(async (_show, waitBeforeAdding) => {
+      await serverAnswer;
+      await waitBeforeAdding?.();
+
+      return { error: null, isFavorite: true };
+    });
     vi.mocked(flyToFavorites).mockReturnValueOnce(new Promise<void>((resolve) => (land = resolve)));
     const { result } = renderHookWithStore(() => usePresenter({ show }));
 
@@ -104,10 +98,10 @@ describe('FavoriteStar usePresenter', () => {
       click = result.current.handleClick();
     });
     await act(() => result.current.handleClick());
-    await act(async () => answer({ error: null, isFavorite: true }));
+    await act(async () => answer());
     await act(() => result.current.handleClick());
 
-    expect(result.current.isPending).toBe(true);
+    expect(result.current).toMatchObject({ isPending: true, isFilling: true });
     expect(toggleFavoriteMock).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -115,6 +109,6 @@ describe('FavoriteStar usePresenter', () => {
       await click;
     });
 
-    expect(result.current.isPending).toBe(false);
+    expect(result.current).toMatchObject({ isPending: false, isFilling: false });
   });
 });

@@ -21,10 +21,30 @@
 .star svg {
   width: 18px;
   height: 18px;
+  overflow: visible;
+}
+
+.outline {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linejoin: round;
+}
+
+/* Gold liquid inside the star: hidden below the bottom edge until the star fills up */
+.liquid {
+  fill: var(--accent);
+  clip-path: polygon(0 100%, 25% 100%, 50% 100%, 75% 100%, 100% 100%, 100% 100%, 0 100%) fill-box;
+}
+
+/* Rises with a wavy surface while the star flies to the counter; keep the duration equal to FLY_DURATION_MS */
+.star[data-filling='true'] .liquid {
+  animation: liquid-rise 650ms cubic-bezier(0.45, 0, 0.55, 1) forwards;
+}
+
+.star[data-filling='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .star:hover {
@@ -44,8 +64,26 @@
   border-color: var(--accent);
 }
 
-.star[data-active='true'] svg {
+.star[data-active='true'] .outline {
   fill: currentColor;
+}
+
+@keyframes liquid-rise {
+  0% {
+    clip-path: polygon(0 100%, 25% 100%, 50% 100%, 75% 100%, 100% 100%, 100% 100%, 0 100%) fill-box;
+  }
+  25% {
+    clip-path: polygon(0 78%, 25% 70%, 50% 76%, 75% 84%, 100% 78%, 100% 100%, 0 100%) fill-box;
+  }
+  50% {
+    clip-path: polygon(0 50%, 25% 58%, 50% 52%, 75% 44%, 100% 50%, 100% 100%, 0 100%) fill-box;
+  }
+  75% {
+    clip-path: polygon(0 24%, 25% 16%, 50% 22%, 75% 30%, 100% 24%, 100% 100%, 0 100%) fill-box;
+  }
+  100% {
+    clip-path: polygon(0 -10%, 25% -10%, 50% -10%, 75% -10%, 100% -10%, 100% 100%, 0 100%) fill-box;
+  }
 }
 
 .star[aria-disabled='true'] {
@@ -56,6 +94,10 @@
 @media (prefers-reduced-motion: reduce) {
   .star {
     transition: none;
+  }
+
+  .star[data-filling='true'] .liquid {
+    animation: none;
   }
 
   .star:hover {

@@ -10,6 +10,7 @@ const usePresenterMock = vi.mocked(usePresenter);
 const presenter = {
   isFavorite: false,
   isPending: false,
+  isFilling: false,
   label: 'Add Lost to favorites',
   buttonRef: { current: null },
   handleClick: vi.fn(),
@@ -31,6 +32,15 @@ describe('FavoriteStar', () => {
     render(<FavoriteStar show={makeShow(1, [])} />);
 
     expect(screen.getByRole('button', { name: 'Remove Lost from favorites' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('fills the star with liquid while its copy is flying', () => {
+    usePresenterMock.mockReturnValue({ ...presenter, isFilling: true });
+    const { container } = render(<FavoriteStar show={makeShow(1, [])} />);
+
+    expect(screen.getByRole('button').getAttribute('data-filling')).toBe('true');
+    // The outline and the liquid that rises inside it
+    expect(container.querySelectorAll('svg path')).toHaveLength(2);
   });
 
   it('calls the handler on click and stays focusable while pending', () => {
