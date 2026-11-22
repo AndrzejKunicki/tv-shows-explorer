@@ -4,10 +4,11 @@ import { usePresenter } from './logic/usePresenter';
 
 /** Star button that adds the show to the favorites or removes it; the parent positions it. */
 export const FavoriteStar = (props: { show: Show }) => {
-  const { isFavorite, isPending, label, handleClick } = usePresenter(props);
+  const { isFavorite, isPending, label, buttonRef, handleClick } = usePresenter(props);
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       className={styles.star}
       data-active={isFavorite}

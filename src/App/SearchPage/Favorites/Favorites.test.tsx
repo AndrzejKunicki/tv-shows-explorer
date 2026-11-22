@@ -25,6 +25,8 @@ describe('Favorites', () => {
     fireEvent.click(button);
 
     expect(button.textContent).toContain('3');
+    // The favorite star flies to this button
+    expect(button.hasAttribute('data-favorites-target')).toBe(true);
     expect(button.getAttribute('aria-expanded')).toBe('false');
     expect(presenter.handleToggle).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('panel')).toBeNull();

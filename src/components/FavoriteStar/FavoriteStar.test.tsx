@@ -7,7 +7,13 @@ import { usePresenter } from './logic/usePresenter';
 vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 const usePresenterMock = vi.mocked(usePresenter);
 
-const presenter = { isFavorite: false, isPending: false, label: 'Add Lost to favorites', handleClick: vi.fn() };
+const presenter = {
+  isFavorite: false,
+  isPending: false,
+  label: 'Add Lost to favorites',
+  buttonRef: { current: null },
+  handleClick: vi.fn(),
+};
 
 describe('FavoriteStar', () => {
   it('is a toggle button labelled with the action', () => {
