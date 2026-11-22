@@ -49,6 +49,16 @@ describe('flyToFavorites', () => {
     expect(document.querySelector(FAVORITES_TARGET_SELECTOR)).toBe(target);
   });
 
+  it('resolves and cleans up when the flight is cancelled', async () => {
+    const star = addElement();
+    addElement('data-favorites-target');
+    animate.mockReturnValueOnce({ finished: Promise.reject(new DOMException('Aborted', 'AbortError')) } as unknown as Animation);
+
+    await expect(flyToFavorites(star)).resolves.toBeUndefined();
+
+    expect(document.body.querySelector('div[aria-hidden="true"]')).toBeNull();
+  });
+
   it('does nothing without a counter on the page or without a button', async () => {
     const star = addElement();
 

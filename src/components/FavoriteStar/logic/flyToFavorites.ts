@@ -29,7 +29,7 @@ const createFlyingStar = (rect: DOMRect) => {
 /**
  * Flies a star from the clicked button to the favorites counter, then pulses the counter.
  * Resolves when the star has arrived; at once when there is nothing to animate (no counter on the page,
- * reduced motion, no Web Animations API).
+ * reduced motion, no Web Animations API). Never rejects: it is decoration and must not break adding.
  */
 export const flyToFavorites = async (from: HTMLElement | null): Promise<void> => {
   const target = document.querySelector<HTMLElement>(FAVORITES_TARGET_SELECTOR);
@@ -57,6 +57,8 @@ export const flyToFavorites = async (from: HTMLElement | null): Promise<void> =>
 
   try {
     await flight.finished;
+  } catch {
+    // A cancelled animation rejects `finished`; the favorite is saved anyway
   } finally {
     star.remove();
   }
