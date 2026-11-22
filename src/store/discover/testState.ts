@@ -1,7 +1,7 @@
 import type { Show } from '@src/api/types';
 import { initialState as showsInitialState } from '@src/store/shows/showsSlice';
 import { makeShow } from '@src/store/shows/testShows';
-import type { RootState } from '@src/store/store';
+import { createStore, type RootState } from '@src/store/store';
 import { initialState, type FeedName } from './discoverSlice';
 
 export const withPoster = (id: number, rating: number | null, weight = 95): Show => ({
@@ -18,7 +18,7 @@ export const discoverState = (feeds: Partial<Record<FeedName, Show[]>>): RootSta
     discover[feed] = { shows, status: 'succeeded' };
   }
 
-  const state = { shows: showsInitialState, discover };
+  const state = { ...createStore().getState(), shows: showsInitialState, discover };
 
   return state;
 };

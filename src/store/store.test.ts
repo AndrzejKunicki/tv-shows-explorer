@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { initialState as discoverInitialState } from './discover/discoverSlice';
+import { initialState as favoritesInitialState } from './favorites/favoritesSlice';
 import { draftChanged, initialState as showsInitialState } from './shows/showsSlice';
 import { createStore, store } from './store';
+import { initialState as toastsInitialState } from './toasts/toastsSlice';
 
 describe('store', () => {
-  it('createStore combines the shows and discover slices', () => {
+  it('createStore combines all slices', () => {
     const state = createStore().getState();
 
-    expect(state).toEqual({ shows: showsInitialState, discover: discoverInitialState });
+    expect(state).toEqual({
+      shows: showsInitialState,
+      discover: discoverInitialState,
+      favorites: favoritesInitialState,
+      toasts: toastsInitialState,
+    });
   });
 
   it('createStore returns independent stores', () => {

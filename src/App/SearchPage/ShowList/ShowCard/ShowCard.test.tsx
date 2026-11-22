@@ -4,6 +4,8 @@ import { makeShow } from '@src/store/shows/testShows';
 import { ShowCard } from './ShowCard';
 import { usePresenter } from './logic/usePresenter';
 
+vi.mock('@src/components/FavoriteStar/FavoriteStar', () => ({ FavoriteStar: () => <button aria-label="star" /> }));
+
 vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 const usePresenterMock = vi.mocked(usePresenter);
 
@@ -46,5 +48,6 @@ describe('ShowCard', () => {
     expect(screen.queryByRole('img')).toBeNull();
     expect(container.querySelectorAll('p')).toHaveLength(0);
     expect(container.textContent).toBe('No imageLost');
+    expect(screen.getByRole('button', { name: 'star' })).toBeTruthy();
   });
 });

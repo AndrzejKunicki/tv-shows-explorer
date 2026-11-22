@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeShow } from './testShows.ts';
-import { fetchSchedule, fetchShowIndex, searchShows } from './tvmaze.ts';
+import { fetchSchedule, fetchShow, fetchShowIndex, searchShows, TvmazeError } from './tvmaze.ts';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -46,9 +46,21 @@ describe('tvmaze api', () => {
     expect(episodes).toEqual([{ id: 10, show: makeShow(3, []) }]);
   });
 
-  it('throws on an error status', async () => {
-    respondWith({}, 503);
+  it('fetchShow requests one show by id', async () => {
+    respondWith(makeShow(7, []));
 
-    await expect(fetchShowIndex(0)).rejects.toThrow('TVmaze API error: 503');
+    const show = await fetchShow(7);
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.tvmaze.com/shows/7');
+    expect(show).toEqual(makeShow(7, []));
+  });
+
+  it('throws a TvmazeError with the status on an error status', async () => {
+    respondWith({}, 404);
+
+    const error = await fetchShow(999).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(TvmazeError);
+    expect(error).toMatchObject({ status: 404, message: 'TVmaze API error: 404' });
   });
 });

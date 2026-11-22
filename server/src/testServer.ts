@@ -9,7 +9,9 @@ export const request = async (path: string, init?: RequestInit) => {
 
   try {
     const response = await fetch(`http://localhost:${port}${path}`, init);
-    const body = await response.json();
+    // 204 has no body
+    const text = await response.text();
+    const body = text ? JSON.parse(text) : null;
 
     return { status: response.status, headers: response.headers, body };
   } finally {

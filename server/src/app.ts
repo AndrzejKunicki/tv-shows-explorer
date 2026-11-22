@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { discoverRouter } from '#src/routes/discover.ts';
+import { favoritesRouter } from '#src/routes/favorites.ts';
 import { showsRouter } from '#src/routes/shows.ts';
 
 /** Turns a failed TVmaze request (or any other error) into a JSON 502 response. */
@@ -22,6 +23,7 @@ export const createApp = () => {
   });
   app.use('/api/shows', showsRouter);
   app.use('/api/discover', discoverRouter);
+  app.use('/api/favorites', favoritesRouter);
   app.use(handleError);
 
   return app;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialState as discoverInitialState } from '@src/store/discover/discoverSlice';
-import type { RootState } from '@src/store/store';
+import { createStore, type RootState } from '@src/store/store';
 import {
   selectDraft,
   selectError,
@@ -17,8 +16,8 @@ import { initialState, type ShowsState } from './showsSlice';
 import { testShows } from './testShows';
 
 const rootState = (shows: Partial<ShowsState>): RootState => ({
+  ...createStore().getState(),
   shows: { ...initialState, ...shows },
-  discover: discoverInitialState,
 });
 
 describe('shows selectors', () => {

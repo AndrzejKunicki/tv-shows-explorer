@@ -2,11 +2,21 @@ import type { ScheduleEpisode, SearchResult, Show } from './types.ts';
 
 const BASE_URL = 'https://api.tvmaze.com';
 
+/** A TVmaze response with an error status; `status` tells e.g. a missing show (404) from an outage. */
+export class TvmazeError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`TVmaze API error: ${status}`);
+    this.status = status;
+  }
+}
+
 const getJson = async <T>(url: string): Promise<T> => {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`TVmaze API error: ${response.status}`);
+    throw new TvmazeError(response.status);
   }
 
   const body = (await response.json()) as T;
@@ -34,4 +44,11 @@ export const fetchSchedule = async (country: string): Promise<ScheduleEpisode[]>
   const episodes = await getJson<ScheduleEpisode[]>(`${BASE_URL}/schedule?country=${encodeURIComponent(country)}`);
 
   return episodes;
+};
+
+/** One show by its TVmaze id. */
+export const fetchShow = async (id: number): Promise<Show> => {
+  const show = await getJson<Show>(`${BASE_URL}/shows/${id}`);
+
+  return show;
 };
