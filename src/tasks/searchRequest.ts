@@ -29,9 +29,13 @@ export const startSearchRequest = () => {
   return signal;
 };
 
-/** Runs `search` after `delayMs`, unless it is scheduled again or another search starts first. */
+/**
+ * Runs `search` after `delayMs`, unless it is scheduled again or another search starts first.
+ * The request in flight is aborted at once: its response is already outdated, and it must not
+ * flash on the screen while the user is still typing.
+ */
 export const scheduleSearch = (search: () => void, delayMs: number) => {
-  clearTimer();
+  cancelSearch();
   timer = setTimeout(() => {
     timer = null;
     search();

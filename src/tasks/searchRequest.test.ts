@@ -45,6 +45,14 @@ describe('searchRequest', () => {
     expect(second.aborted).toBe(false);
   });
 
+  it('scheduling a search aborts the request in flight at once', () => {
+    const signal = startSearchRequest();
+
+    scheduleSearch(vi.fn(), 300);
+
+    expect(signal.aborted).toBe(true);
+  });
+
   it('a new request cancels the scheduled search', () => {
     const search = vi.fn();
 
