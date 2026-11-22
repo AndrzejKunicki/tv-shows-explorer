@@ -17,7 +17,7 @@ const toToastMessage = (name: string, result: ToggleFavoriteResult) => {
 export const usePresenter = ({ show }: { show: Show }) => {
   const dispatch = useAppDispatch();
   const isFavorite = useAppSelector((state) => selectIsFavorite(state, show.id));
-  // Ignores more clicks while the server is answering. Not `disabled`: a disabled button loses keyboard focus
+  // Ignores more clicks until the toast is shown (request + flight). Not `disabled`: it would lose keyboard focus
   const [isPending, setIsPending] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -27,14 +27,18 @@ export const usePresenter = ({ show }: { show: Show }) => {
     }
 
     setIsPending(true);
-    const result = await toggleFavorite(show);
-    setIsPending(false);
-    // Only a confirmed add flies to the counter; the toast follows once the star has arrived
-    if (!result.error && result.isFavorite) {
-      await flyToFavorites(buttonRef.current);
+
+    try {
+      const result = await toggleFavorite(show);
+      // Only a confirmed add flies to the counter; the toast follows once the star has arrived
+      if (!result.error && result.isFavorite) {
+        await flyToFavorites(buttonRef.current);
+      }
+      const message = toToastMessage(show.name, result);
+      dispatch(toastShown(message, result.error ? 'error' : 'success'));
+    } finally {
+      setIsPending(false);
     }
-    const message = toToastMessage(show.name, result);
-    dispatch(toastShown(message, result.error ? 'error' : 'success'));
   };
   const label = isFavorite ? `Remove ${show.name} from favorites` : `Add ${show.name} to favorites`;
 

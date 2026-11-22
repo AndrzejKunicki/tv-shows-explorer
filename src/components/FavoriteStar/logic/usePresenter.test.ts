@@ -92,25 +92,26 @@ describe('FavoriteStar usePresenter', () => {
     ]);
   });
 
-  it('is pending while the server answers', async () => {
-    let finish = (_value: { error: null; isFavorite: boolean }) => {};
-    toggleFavoriteMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+  it('ignores clicks while the server answers and during the flight', async () => {
+    let answer = (_value: { error: null; isFavorite: boolean }) => {};
+    let land = () => {};
+    toggleFavoriteMock.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    vi.mocked(flyToFavorites).mockReturnValueOnce(new Promise<void>((resolve) => (land = resolve)));
     const { result } = renderHookWithStore(() => usePresenter({ show }));
 
     let click = Promise.resolve();
     act(() => {
       click = result.current.handleClick();
     });
-
-    expect(result.current.isPending).toBe(true);
-
-    // A second click while the server is answering is ignored
+    await act(() => result.current.handleClick());
+    await act(async () => answer({ error: null, isFavorite: true }));
     await act(() => result.current.handleClick());
 
+    expect(result.current.isPending).toBe(true);
     expect(toggleFavoriteMock).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      finish({ error: null, isFavorite: true });
+      land();
       await click;
     });
 
