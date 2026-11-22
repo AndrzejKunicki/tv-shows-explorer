@@ -7,7 +7,7 @@
 - `server/` — backend: Express 5 на Node 24 (TypeScript запускается напрямую, без сборки).
   Ищет в TVmaze, фильтрует по жанру, сортирует, делит на страницы и кэширует ответы TVmaze на 5 минут.
 
-Правила архитектуры — в [ARCHITECTURE.md](ARCHITECTURE.md).
+Правила архитектуры — в [ARCHITECTURE.md](ARCHITECTURE.md) (общая схема и клиент) и [.claude/rules/backend.md](.claude/rules/backend.md) (backend).
 
 ## Запуск локально
 

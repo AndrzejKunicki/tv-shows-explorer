@@ -1,432 +1,17 @@
 # Simple Architecture
 
-Стек: клиент — React + Vite + TypeScript (`src/`), backend — Express + Node + TypeScript (`server/`, §8).
+Стек: клиент — React + Vite + TypeScript + Redux Toolkit (`src/`), backend — Express + Node + TypeScript (`server/`).
 Источник данных: TVMaze API (https://api.tvmaze.com); к нему обращается только backend.
 
-## 1. Дерево каталогов = иерархия компонентов
+Этот файл — общая схема и правила клиента. Правила backend — в `.claude/rules/backend.md`
+(загружаются при работе с `server/`), форматирование — в `.claude/rules/code-style.md`.
 
-- Структура каталогов повторяет дерево компонентов. Корень — `src/App/`,
-  страницы (например, `SearchPage`, `ShowDetailsPage`) — его дети.
-- Компонент, который используется только как дочерний для одного родителя, лежит в каталоге родителя.
-- Компонент может импортировать только: своих детей (подкаталоги), `src/components/`, `src/api/`
-  и другие общие каталоги. Импорты из каталогов соседей/«кузенов» запрещены.
-- Когда компонент начинает использоваться вторым родителем — переносим его в `src/components/`.
-
-## 2. Переиспользуемые компоненты
-
-- Лежат в `src/components/` и подчиняются тем же правилам (каталог, view, presenter).
-
-## 3. Устройство компонента: View + Presenter
-
-- У каждого компонента свой каталог `ComponentName/`.
-- `ComponentName.tsx` (view) — только JSX. Единственная логика: вызов `usePresenter(props)`.
-  Никаких `useState`, `useEffect`, обработчиков и вычислений во view.
-- `logic/usePresenter.ts` — логика компонента (состояние UI, эффекты, обработчики, подготовка данных,
-  вызов задач). Бизнес-логика — в задачах (`logic/tasks/`, см. ниже).
-  Лежит в подкаталоге `logic/` того же компонента. Возвращает готовые данные и обработчики для view.
-- `logic/usePresenter.ts` необязателен — только если у компонента есть логика.
-  Компонент, который лишь отображает пропсы, состоит из одного view.
-
-### Пример структуры
-
-```
-src/
-  App/
-    App.tsx
-    SearchPage/
-      SearchPage.tsx
-      types.ts
-      logic/
-        usePresenter.ts
-      SearchBar/
-        SearchBar.tsx
-        logic/
-          usePresenter.ts
-          tasks/
-            findShows.ts
-      ResultsList/
-        ResultsList.tsx
-        ShowCard/
-          ShowCard.tsx
-  components/
-    Spinner/
-      Spinner.tsx
-  api/
-    showsApi.ts
-    types.ts
-```
-
-### Пример компонента
-
-```tsx
-// SearchBar/logic/usePresenter.ts
-import { useState } from 'react';
-
-export const usePresenter = ({ onSearch }: { onSearch: (q: string) => void }) => {
-  const [query, setQuery] = useState('');
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(query.trim());
-  };
-  return { query, handleChange, handleSubmit };
-};
-```
-
-```tsx
-// SearchBar/SearchBar.tsx
-import { usePresenter } from './logic/usePresenter';
-
-export const SearchBar = (props: { onSearch: (q: string) => void }) => {
-  const { query, handleChange, handleSubmit } = usePresenter(props);
-  return (
-    <form onSubmit={handleSubmit}>
-      <input value={query} onChange={handleChange} />
-    </form>
-  );
-};
-```
-
-### Задачи (tasks)
-
-Задача — вариант использования (use case): то, что пользователь просит приложение сделать
-(«найти сериал», «выйти из аккаунта»). Это и есть бизнес-логика. Её можно описать словами, не упомянув
-ни одного инструмента, — так же её пишем и в коде.
+## Frontend и backend
 
 ```
 View ──событие──▶ Presenter ──вызов──▶ Task ──▶ Store
-                     ▲                   │  └─▶ api/
+                     ▲                   │  └─▶ src/api/ ──HTTP──▶ server/ (routes → tasks → storage, TVmaze)
                      └────результат──────┘
-```
-
-- **Задача — обычная функция** (TypeScript): параметры → тело → `return`. Не thunk, не сага, не хук,
-  не класс и не метод store. Задача может быть `async`.
-- **Название — глагол**, описывающий действие: `logout`, `unsubscribe`, `findShows`.
-  Один файл — одна задача, имя файла совпадает с именем функции: `tasks/findShows.ts`.
-- **Расположение:** каталог `tasks/` на том же уровне, что и `usePresenter.ts`: `ComponentName/logic/tasks/`.
-  Задача, которую вызывают несколько компонентов, переносится в общий каталог `src/tasks/`
-  (тот же принцип colocation, что в §4): например, `src/tasks/findShows.ts` вызывают `SearchBar` и `PopularToday`.
-- **Одна задача — одна функция снаружи.** Внутри её можно разбить на сколько угодно мелких функций
-  (и файлов), но вызывающий видит один вызов. Самостоятельный кусок, нужный в разных сценариях,
-  выносится в отдельную задачу и вызывается из этой как обычная функция (`logout` → `unsubscribeFromPush`).
-- **В задаче нет React:** ни хуков, ни JSX, ни импортов из `react`, ни компонентов, ни локального
-  состояния UI, ни навигации. Если переписать UI на другой фреймворк, переписываются view и presenter,
-  а задачи остаются почти без изменений. Если в задаче понадобился хук — этот кусок относится к presenter,
-  а задача получает из него готовые значения параметрами.
-- **Со store задача работает напрямую через фасад домена:** импортирует объект store домена
-  (`showsStore`, `discoverStore`) и вызывает его именованные операции чтения/записи —
-  `showsStore.getPage()`, `showsStore.setPage(2)`, `discoverStore.setFeed('index', shows)`.
-  Задача — контроллер: ей доступен любой store / домен. Посредники (`redux-thunk`, `createAsyncThunk`,
-  `redux-saga`) не используем — они мешают `await` и возврату результата.
-- **Фасад store** — `src/store/<domain>/<domain>Store.ts`: store как база данных — только get/set
-  в терминах предметной области, без сценариев. Это единственное место, где задачи встречаются
-  с API библиотеки (`store.getState()`, `store.dispatch(...)`, экшены, селекторы). При смене библиотеки
-  (Redux → Zustand/MobX) переписывается фасад, а задачи остаются прежними. Presenter читает store
-  через хуки (`useAppSelector`) и фасад не использует — ему нужна реактивность.
-- **Других абстракций над store заранее не вводим.** Универсальные адаптеры, интерфейсы или передачу store
-  параметром добавляем только при конкретной потребности (несколько реализаций, реальная миграция,
-  сложности с тестами).
-- **С внешним миром задача говорит через `src/api/`:** вызывает функции API-клиента
-  (`searchShows(query, signal)`), а не `fetch`. Задача не знает, HTTP это или веб-сокеты.
-- **Задача возвращает результат** вызывающему. Presenter дожидается её через `await` и по результату
-  решает, что показать: ошибку, редирект, новое состояние кнопки.
-
-```ts
-// SearchPage/logic/tasks/findShows.ts — без React, store домена импортируется напрямую
-import { searchShows } from '@src/api/showsApi';
-import { showsStore } from '@src/store/shows/showsStore';
-
-type FindShowsResult = { error: string | null };
-
-export const findShows = async (query: string): Promise<FindShowsResult> => {
-  try {
-    const page = await searchShows({ query, genre: null, sort: 'relevance', page: 1 });
-    showsStore.receiveResults(page);
-
-    return { error: null };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-
-    return { error: message };
-  }
-};
-```
-
-```ts
-// SearchPage/logic/usePresenter.ts — ждёт задачу, loading/error держит локально
-import { useState } from 'react';
-import { findShows } from './tasks/findShows';
-
-export const usePresenter = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSearch = async (query: string) => {
-    setIsLoading(true);
-    const result = await findShows(query);
-    setIsLoading(false);
-    setError(result.error);
-  };
-
-  return { isLoading, error, handleSearch };
-};
-```
-
-#### Явный вызов задач вместо реактивных цепочек
-
-- Действие пользователя → обработчик в presenter → **явный вызов задачи**. Нужна другая страница —
-  вызываем задачу «загрузить сериалы страницы», а не меняем `page` в store в расчёте, что `useEffect`
-  это заметит и загрузит данные.
-- Несколько шагов вызываем **по очереди** (`await` одной задачи за другой) — в обработчике или внутри
-  задачи. Порядок действий виден в коде. Когда много эффектов подписано на разные поля, неясно,
-  что за чем происходит и что запустило загрузку.
-- Изменения store при ошибке должны быть обратимы. Два варианта:
-  - **предпочтительно — запись по результату:** новая страница и её данные записываются вместе и только
-    после успешной загрузки; если загрузка не удалась, store остаётся прежним — откатывать нечего
-    (`loadShowsPage` ниже);
-  - **допустимо — оптимистичная запись с откатом** в той же задаче: сначала меняем `page`, при ошибке
-    возвращаем прежнее значение (`goToPage` ниже). В явном подходе откат безопасен: на `page` не подписан
-    ни один эффект. В реактивном откат снова запустил бы эффект и загрузку.
-- `useEffect` не используем для запуска сценариев по изменению store или пропсов. Допустимо:
-  вызов задачи при монтировании и подписка на внешние источники (таймер, события окна) с cleanup.
-  Debounce — таймер в обработчике ввода, а не эффект на изменение `query`.
-
-```ts
-// ❌ Реактивно: смена page запускает эффект
-const page = useAppSelector(selectPage);
-
-useEffect(() => {
-  dispatch(fetchShows(page));
-}, [page]);
-
-const handleNext = () => dispatch(pageChanged(page + 1));
-// Загрузка страницы 2 упала, а в store уже page = 2: UI показывает «страницу 2»
-// со старыми данными или пустой список. Вернуться на страницу 1 нельзя без
-// дополнительных полей и флагов — смена page снова запустит эффект.
-```
-
-```ts
-// ✅ Явно: SearchPage/logic/tasks/loadShowsPage.ts
-import { fetchShowIndex } from '@src/api/showsApi';
-import { showsStore } from '@src/store/shows/showsStore';
-
-type LoadShowsPageResult = { error: string | null };
-
-export const loadShowsPage = async (page: number): Promise<LoadShowsPageResult> => {
-  try {
-    const shows = await fetchShowIndex(page);
-    // Страница и данные меняются вместе и только при успехе.
-    showsStore.setPageWithShows(page, shows);
-
-    return { error: null };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-
-    return { error: message };
-  }
-};
-```
-
-```ts
-// ✅ SearchPage/logic/usePresenter.ts — обработчик явно вызывает задачу
-const handleNext = async () => {
-  setIsLoading(true);
-  const result = await loadShowsPage(page + 1);
-  setIsLoading(false);
-  // При ошибке page в store не изменился — пользователь остаётся на текущей странице.
-  setError(result.error);
-};
-```
-
-Оптимистичная запись с откатом и задача, которая вызывает другую задачу:
-
-```ts
-// ✅ SearchPage/logic/tasks/goToPage.ts
-import { showsStore } from '@src/store/shows/showsStore';
-import { loadShows } from './loadShows';
-
-type GoToPageResult = { error: string | null };
-
-export const goToPage = async (nextPage: number): Promise<GoToPageResult> => {
-  const currentPage = showsStore.getPage();
-  showsStore.setPage(nextPage);
-
-  // loadShows читает page из store и возвращает { error }.
-  const result = await loadShows();
-
-  if (result.error) {
-    // Откат возможен: на смену page не подписан ни один эффект.
-    showsStore.setPage(currentPage);
-  }
-
-  return result;
-};
-```
-
-```ts
-// ✅ SearchPage/logic/tasks/goToNextPage.ts — проверка границы и вызов другой задачи
-import { showsStore } from '@src/store/shows/showsStore';
-import { goToPage } from './goToPage';
-
-export const goToNextPage = async () => {
-  const nextPage = showsStore.getPage() + 1;
-  const isAfterLastPage = nextPage > showsStore.getPageCount();
-
-  if (isAfterLastPage) {
-    return { error: null };
-  }
-
-  const result = await goToPage(nextPage);
-
-  return result;
-};
-```
-
-Пока идёт загрузка, UI уже показывает новый номер страницы — кнопки пагинации на это время блокируем
-(`isLoading` в presenter):
-
-```ts
-// ✅ Pagination/logic/usePresenter.ts — loading локально, на время задачи
-import { useState } from 'react';
-import { goToNextPage } from './tasks/goToNextPage';
-
-export const usePresenter = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleNext = async () => {
-    setIsLoading(true);
-    const result = await goToNextPage();
-    setIsLoading(false);
-    setError(result.error);
-  };
-
-  const isDisabled = isLoading;
-
-  return { isDisabled, error, handleNext };
-};
-```
-
-#### Presenter и store
-
-- Presenter **не содержит бизнес-логику** — её выносим в задачи. Presenter готовит данные для view,
-  держит локальное состояние UI, вызывает задачи и выполняет навигацию.
-- **Чтение** store из presenter — можно и нужно: данные для view читаем через `useAppSelector`.
-  Он подписывает компонент на store, и view перерисовывается при изменении.
-  `store.getState()` — разовый снимок без подписки: для отображения не подходит.
-- **Запись** в store из presenter — можно, если она примитивна: один `dispatch` без условий и
-  последовательности шагов, и на это изменение не реагирует ни один эффект (например, смена страницы
-  при пагинации уже загруженного списка). Как только запись обрастает логикой
-  (проверки, несколько шагов, вызов API) — это сигнал вынести её в задачу.
-- **Loading и error** одного действия, нужные только этому компоненту, держим в presenter (`useState`),
-  а не в store. В store кладём то, что нужно нескольким компонентам (например, результаты поиска читают
-  список, фильтр и пагинация).
-
-```ts
-// Pagination/logic/usePresenter.ts — примитивная запись, задача не нужна
-export const usePresenter = () => {
-  const dispatch = useAppDispatch();
-  const page = useAppSelector(selectCurrentPage);
-
-  const handleNext = () => dispatch(pageChanged(page + 1));
-
-  return { page, handleNext };
-};
-```
-
-## 4. Код, который не является компонентом
-
-- Вызовы API — в `src/api/`. Функции из `src/api/` вызывают задачи (`tasks/`); `fetch` напрямую
-  не вызывает никто, кроме `src/api/`.
-- Клиент обращается только к своему backend (`src/api/showsApi.ts` → `/api/...`), никогда к TVmaze напрямую.
-  Поиск, фильтр жанров, сортировка, пагинация, подбор сериалов для рядов стартовой страницы и кэш ответов
-  TVmaze — на backend; клиент получает готовые данные и хранит их в store (см. «Кто за что отвечает», §8). Адрес backend в production-сборке — `VITE_API_URL`,
-  локально Vite проксирует `/api` на `localhost:3000`.
-- Типы лежат рядом с тем, к чему относятся: типы view/компонента — в его каталоге,
-  типы API — в `src/api/`.
-- Общий принцип (colocation): код лежит как можно ближе к месту использования; только когда он
-  становится общим, он переносится в общий каталог на уровне `src/`.
-
-## 5. Store: Redux (Redux Toolkit)
-
-- Store глобальный, поэтому лежит на уровне `src/store/`:
-  - `store.ts` — конфигурация store и типы `RootState`, `AppDispatch`,
-  - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
-  - `domainName/` — каталог домена (например, `shows/`) со slice (`showsSlice.ts`), селекторами (`selectors.ts`)
-    и фасадом для задач (`showsStore.ts`).
-- Store — это база данных: состояние и именованные операции записи/чтения в терминах предметной
-  области (`pageChanged`, `searchCleared`, селекторы). Бизнес-сценариев (последовательность шагов,
-  вызовы API, проверки) в store нет — они в задачах.
-- С store работают presenter (через хуки) и задачи (через фасад домена `showsStore`, `discoverStore`).
-  View никогда не импортирует store.
-- В presenter используем только типизированные хуки из `src/store/hooks.ts`, а не «голые»
-  `useSelector`/`useDispatch`. Задачи хуки не используют и не импортируют `store`, экшены и селекторы
-  напрямую — только фасад; `store.getState()` и `store.dispatch(...)` вызывает только фасад.
-- Производные данные, которые клиент считает сам — только то, что относится к отображению (сколько сериалов
-  помещается в ряд, раскладка стены постеров), — вычисляем в селекторах (`createSelector`), а не в компонентах. Фильтрацию, сортировку и пагинацию результатов поиска делает backend.
-- Thunk и саги (`createAsyncThunk`, `redux-thunk`, `redux-saga`) не используем: асинхронные операции —
-  это задачи, которые вызывают функции из `src/api/` и пишут результат в store.
-- Локальное состояние UI, которое не нужно другим компонентам (значение инпута, loading/error одного
-  действия), остаётся в presenter (`useState`).
-- Уведомления (toast) — общее состояние UI в `src/store/toasts/`: показать его может любой компонент,
-  отображает `App/Toaster`. Задача уведомлений не показывает: она возвращает результат, а presenter решает,
-  какой toast показать (например, `FavoriteStar` после `toggleFavorite`).
-
-## 6. Стили и тесты
-
-- Стили и тесты лежат рядом с файлами, к которым относятся, — в том же каталоге.
-- Стили: `ComponentName.module.css` рядом с `ComponentName.tsx`.
-- Тесты: `FileName.test.ts(x)` рядом с тестируемым файлом, например `SearchBar.test.tsx`,
-  `usePresenter.test.ts`, `showsApi.test.ts`. Расширение теста совпадает с расширением файла:
-  `Foo.tsx` → `Foo.test.tsx`, `foo.ts` → `foo.test.ts`.
-- У каждого файла `.ts`/`.tsx` в `src/` и `server/src/` есть свой тест. Исключения: стили (`*.css`), файлы только
-  с типами (`types.ts`, `*.d.ts`), точки входа `main.tsx` и `server/src/index.ts` и тестовые фикстуры/хелперы
-  (`test*.ts(x)`, например `testShows.ts`, `testStore.tsx`, `testServer.ts`).
-- View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`), presenter — через
-  `renderHookWithStore` из `@src/store/testStore` с замоканными задачами (`vi.mock('./tasks/findShows')`).
-- Задачи тестируем как обычные функции, без React и `renderHook`: `tasks/findShows.test.ts` рядом с
-  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/showsApi')`).
-  - Обычно мокаем фасад (`vi.mock('@src/store/shows/showsStore')`) и проверяем вызовы его операций —
-    такой тест не зависит от библиотеки store.
-  - Когда важно реальное поведение данных (гонки запросов), используем настоящий store: мокаем модуль
-    store фабрикой `mockStoreModule` из `@src/store/testAppStore`, в `beforeEach` берём свежий store
-    через `resetAppStore()` и проверяем `store.getState()`. Так же тестируем сам фасад.
-
-```
-SearchBar/
-  SearchBar.tsx
-  SearchBar.module.css
-  SearchBar.test.tsx
-  logic/
-    usePresenter.ts
-    usePresenter.test.ts
-    tasks/
-      findShows.ts
-      findShows.test.ts
-```
-
-## 7. Размер файлов
-
-- Каждый файл — максимум 120 строк (включая импорты и типы).
-- Если файл длиннее — разбиваем его на абстракции (дочерние компоненты, отдельные хуки, вспомогательные функции).
-
-## 8. Backend (`server/`)
-
-- Отдельный Node-пакет со своим `package.json`: Render собирает только каталог `server/`. Express 5,
-  TypeScript запускается самим Node (type stripping), без сборки — поэтому только «стираемый» синтаксис
-  (`erasableSyntaxOnly`) и импорты с расширением `.ts`. Импорты внутри пакета — через `#src/...`
-  (поле `imports` в `server/package.json`), а не через `../`.
-- Слои те же, что на клиенте:
-
-```
-server/src/
-  index.ts          — точка входа: порт из PORT, запуск app
-  app.ts            — сборка Express: CORS, роуты, обработчик ошибок
-  routes/           — HTTP: читают и проверяют параметры, вызывают задачу, отдают JSON
-  tasks/            — сценарии: findShowsPage, getAiringToday, getTopRated, getHiddenGems, addFavorite,
-                      removeFavorite, listFavorites, getCached и др.
-  storage/          — данные в памяти как база: get/set без правил (cache.ts, favorite.ts)
-  api/              — клиент TVmaze (fetch) и типы
 ```
 
 ### Кто за что отвечает
@@ -436,31 +21,193 @@ Frontend отвечает за взаимодействие с пользова�
 
 | Backend (`server/`) | Frontend (`src/`) |
 | --- | --- |
-| Обращения к TVmaze и кэш ответов на 5 минут | Обращения только к своему API (`src/api/showsApi.ts`) |
+| Обращения к TVmaze и кэш ответов на 5 минут | Обращения только к своему API (`src/api/`) |
 | Поиск: фильтр по жанру, сортировка, пагинация, список жанров | Параметры поиска в store, отмена устаревших запросов, debounce ввода |
 | Какие сериалы попадают в ряды стартовой страницы и в каком порядке (популярность, рейтинг, «скрытые жемчужины», случайные страницы) | Сколько сериалов помещается в ряд, раскладка стены постеров, подсказки «Popular on TV today» из первых сериалов |
 | Проверка параметров запросов (`400`), ошибки TVmaze (`502`) | Показ загрузки и ошибок, локальное состояние UI |
-| Избранное: хранение (`storage/favorite.ts`), проверка id, данные шоу берёт у TVmaze сам, повторное добавление ничего не меняет, порядок «новые первыми» | Копия списка избранного в store, обновляется только после ответа сервера; звёздочка, счётчик, панель со списком, toast с результатом |
+| Избранное: хранение, проверка id, данные шоу берёт у TVmaze сам, повторное добавление ничего не меняет, порядок «новые первыми» | Копия списка избранного в store, обновляется только после ответа сервера; звёздочка, счётчик, панель, toast с результатом |
 | — | Повторная загрузка упавшей подборки при следующем показе стартовой страницы |
 
 Правило: если правило можно сформулировать без слов «экран», «кнопка», «ряд из N карточек» — его место на backend.
 
-- **Роуты** не содержат бизнес-логики: параметры → задача → ответ. Неверные параметры — `400 { error }`,
-  ошибка TVmaze — `502 { error }` (общий обработчик в `app.ts`).
-- **Задачи** не знают об Express и HTTP: получают параметры и возвращают данные.
-- **Кэш** — обычный объект `const cache = {}` в `storage/cache.ts`. Задача `getCached(key, load)`: если такой же
-  запрос к TVmaze выполнялся меньше 5 минут назад, возвращает данные из кэша, иначе обращается к TVmaze
-  и обновляет кэш. Неудачный запрос не кэшируется, устаревшие записи удаляются при записи новых.
-  Ключ — смысл запроса (`search:<фраза в нижнем регистре>`, `index:<page>`, `schedule:<country>`),
-  поэтому фильтр, сортировка и страницы одного поиска не вызывают новых запросов к TVmaze.
-- **Избранное** — обычный объект `const favorite = {}` в `storage/favorite.ts` (ключ — id шоу), одно на весь
-  сервер, живёт до перезапуска процесса. API: `GET /api/favorites`, `PUT /api/favorites/:id`,
-  `DELETE /api/favorites/:id`. Клиент присылает только id: данные шоу сервер берёт у TVmaze сам (через кэш),
-  поэтому сохранить выдуманные данные нельзя. Неизвестное шоу — `404`, неверный id — `400`.
-  `PUT` и `DELETE` идемпотентны.
-- Типы ответа (`Show`, `SearchPage`) описаны и в `server/src/api/types.ts`, и в `src/api/types.ts`:
-  пакеты собираются отдельно. При изменении ответа меняем оба файла.
-- Тесты backend лежат рядом с файлами и запускаются тем же `npm test` (проект Vitest `server`,
-  окружение `node`). Роуты тестируем через `request()` из `testServer.ts` (настоящий HTTP на свободном порту)
-  с замоканными задачами; задачи — с замоканным `api/tvmaze.ts` и очищенным кэшем (`cacheStorage.clear()`).
-- Деплой: Render по `render.yaml`. В production CORS разрешён только домену клиента (`CORS_ORIGIN`).
+## 1. Дерево каталогов = иерархия компонентов
+
+- Структура каталогов повторяет дерево компонентов. Корень — `src/App/`, страницы (`SearchPage`) — его дети.
+- Компонент, который используется только как дочерний для одного родителя, лежит в каталоге родителя.
+- Компонент может импортировать только: своих детей (подкаталоги), `src/components/`, `src/api/`,
+  `src/store/`, `src/tasks/` и другие общие каталоги. Импорты из каталогов соседей/«кузенов» запрещены.
+- Когда компонент начинает использоваться вторым родителем — переносим его в `src/components/`.
+
+## 2. Переиспользуемые компоненты
+
+- Лежат в `src/components/` и подчиняются тем же правилам (каталог, view, presenter), например `FavoriteStar`.
+
+## 3. Устройство компонента: View + Presenter + Tasks
+
+```
+ComponentName/
+  ComponentName.tsx        ← view: только JSX
+  ComponentName.module.css
+  logic/
+    usePresenter.ts        ← presenter и все хуки компонента
+    tasks/
+      doSomething.ts       ← задачи, которые вызывает только этот компонент
+```
+
+- `ComponentName.tsx` (view) — только JSX. Единственная логика: вызов `usePresenter(props)`.
+  Никаких `useState`, `useEffect`, обработчиков и вычислений во view.
+- `logic/usePresenter.ts` — логика компонента: состояние UI, эффекты, обработчики, подготовка данных для view,
+  вызов задач, навигация. Бизнес-логики в presenter нет — она в задачах. Возвращает готовые данные и обработчики.
+- `logic/` необязателен: компонент, который лишь отображает пропсы, состоит из одного view.
+
+### Задачи (tasks)
+
+Задача — вариант использования (use case): то, что пользователь просит приложение сделать
+(«найти сериал», «добавить в избранное»). Её можно описать словами, не упомянув ни одного инструмента.
+
+- **Обычная функция** (TypeScript): параметры → тело → `return`. Не thunk, не сага, не хук, не класс
+  и не метод store. Может быть `async`.
+- **Название — глагол**: `findShows`, `toggleFavorite`, `goToNextPage`. Один файл — одна задача,
+  имя файла совпадает с именем функции. Не влезает в 120 строк — задача становится папкой.
+- **Расположение:** `ComponentName/logic/tasks/`. Задача, которую вызывают несколько компонентов, —
+  в общем `src/tasks/` (например, `findShows` вызывают `SearchBar` и `PopularToday`).
+- **Одна задача — одна функция снаружи.** Внутри её можно разбить на мелкие функции, а самостоятельный кусок,
+  нужный в разных сценариях, — вынести в отдельную задачу и вызвать как обычную функцию
+  (`goToNextPage` → `loadResults`).
+- **В задаче нет React:** ни хуков, ни JSX, ни импортов из `react`, ни локального состояния UI, ни навигации,
+  ни уведомлений. Если понадобился хук — этот кусок относится к presenter.
+- **Со store задача работает напрямую через фасад домена** (`showsStore`, `discoverStore`, `favoritesStore`):
+  вызывает его именованные операции — `showsStore.getPage()`, `favoritesStore.add(show)`. Задача — контроллер:
+  ей доступен любой домен. `redux-thunk`, `createAsyncThunk`, `redux-saga` не используем: они мешают `await`
+  и возврату результата.
+- **С сервером задача говорит через `src/api/`** (`searchShows`, `addFavorite`), а не через `fetch`.
+- **Задача возвращает результат** (`{ error }`, новое состояние). Presenter дожидается её через `await`
+  и по результату решает, что показать: ошибку, toast, новое состояние кнопки.
+
+Пример — `src/tasks/toggleFavorite.ts` и presenter, который её вызывает
+(`src/components/FavoriteStar/logic/usePresenter.ts`):
+
+```ts
+// Задача: API + фасад store, результат вызывающему. Store меняется только после ответа сервера.
+export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> => {
+  const wasFavorite = favoritesStore.isFavorite(show.id);
+
+  try {
+    if (wasFavorite) {
+      await removeFavorite(show.id);
+      favoritesStore.remove(show.id);
+    } else {
+      const saved = await addFavorite(show.id);
+      favoritesStore.add(saved);
+    }
+
+    return { error: null, isFavorite: !wasFavorite };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    return { error: message, isFavorite: wasFavorite };
+  }
+};
+
+// Presenter: loading локально, по результату — toast.
+const handleClick = async () => {
+  setIsPending(true);
+  const result = await toggleFavorite(show);
+  setIsPending(false);
+  dispatch(toastShown(toToastMessage(show.name, result), result.error ? 'error' : 'success'));
+};
+```
+
+### Явный вызов задач вместо реактивных цепочек
+
+- Действие пользователя → обработчик в presenter → **явный вызов задачи**. Нужна другая страница —
+  вызываем задачу (`goToNextPage`), а не меняем `page` в store в расчёте, что `useEffect` это заметит.
+- Несколько шагов вызываем **по очереди** (`await` одной задачи за другой). Порядок действий виден в коде;
+  когда много эффектов подписано на разные поля, неясно, что запустило загрузку.
+- Ошибка не должна оставлять store в противоречивом состоянии: либо пишем по результату (данные меняются
+  только после успешного ответа, как в `toggleFavorite`), либо оптимистично с откатом или явным
+  состоянием ошибки. В явном подходе откат безопасен — на поле не подписан ни один эффект.
+- `useEffect` не используем для запуска сценариев по изменению store или пропсов. Допустимо: вызов задачи
+  при монтировании и подписка на внешние источники (таймер, события окна) с cleanup.
+  Debounce — таймер в задаче (`findShowsDebounced`), а не эффект на изменение текста поля.
+
+```ts
+// ❌ Реактивно: смена page запускает эффект. Загрузка упала — в store уже page = 2,
+// а вернуться нельзя без флагов: смена page снова запустит эффект.
+useEffect(() => {
+  dispatch(fetchShows(page));
+}, [page]);
+
+// ✅ Явно (Pagination/logic/tasks/goToNextPage.ts): проверка границы, запись, загрузка.
+export const goToNextPage = async () => {
+  const page = showsStore.getPage();
+  if (page >= showsStore.getPageCount()) {
+    return { error: null };
+  }
+
+  showsStore.setPage(page + 1);
+  const result = await loadResults();
+
+  return result;
+};
+```
+
+### Presenter и store
+
+- **Чтение** store из presenter — через `useAppSelector`: он подписывает компонент на store, и view
+  перерисовывается при изменении. `store.getState()` — разовый снимок без подписки, для отображения не подходит.
+- **Запись** из presenter — только примитивная: один `dispatch` без условий и шагов, на который не реагирует
+  ни один эффект (например, показать toast). Как только запись обрастает логикой (проверки, несколько шагов,
+  вызов API) — выносим её в задачу.
+- **Loading и error** одного действия, нужные только этому компоненту, держим в presenter (`useState`).
+  В store кладём то, что нужно нескольким компонентам.
+
+## 4. Код, который не является компонентом
+
+- Вызовы API — в `src/api/` (`request.ts` — общий `fetch` к backend, `showsApi.ts`, `favoritesApi.ts`).
+  Функции из `src/api/` вызывают задачи; `fetch` напрямую не вызывает никто, кроме `src/api/request.ts`.
+- Адрес backend в production-сборке — `VITE_API_URL`; локально Vite проксирует `/api` на `localhost:3000`.
+- Типы лежат рядом с тем, к чему относятся: типы компонента — в его каталоге, типы API — в `src/api/types.ts`.
+- Общий принцип (colocation): код лежит как можно ближе к месту использования; только когда он
+  становится общим, он переносится в общий каталог на уровне `src/`.
+
+## 5. Store: Redux (Redux Toolkit)
+
+- Store глобальный и лежит в `src/store/`:
+  - `store.ts` — конфигурация и типы `RootState`, `AppDispatch`,
+  - `hooks.ts` — типизированные `useAppDispatch` и `useAppSelector`,
+  - `<domain>/` (`shows`, `discover`, `favorites`, `toasts`) — slice, `selectors.ts` и фасад для задач
+    `<domain>Store.ts`.
+- Store — это база данных: состояние и именованные операции записи/чтения в терминах предметной области.
+  Сценариев (последовательность шагов, вызовы API, проверки) в store нет — они в задачах.
+- **Фасад** `<domain>Store.ts` — единственное место, где задачи встречаются с API Redux (`getState`, `dispatch`,
+  экшены, селекторы). При смене библиотеки переписывается фасад, а задачи остаются прежними.
+  Других абстракций над store заранее не вводим.
+- С store работают presenter (через типизированные хуки) и задачи (через фасад). View никогда не импортирует store.
+- Производные данные, которые клиент считает сам, — только то, что относится к отображению (сколько сериалов
+  помещается в ряд, раскладка стены постеров), — в селекторах (`createSelector`), а не в компонентах.
+- Локальное состояние UI, которое не нужно другим компонентам (значение инпута, loading/error одного
+  действия, открыт ли список), остаётся в presenter (`useState`).
+- Уведомления (toast) — общее состояние UI в `src/store/toasts/`: показать его может любой presenter,
+  отображает `App/Toaster`. Задача уведомлений не показывает: она возвращает результат.
+
+## 6. Стили и тесты
+
+- Стили и тесты лежат рядом с файлами, к которым относятся, — в том же каталоге.
+- Стили: `ComponentName.module.css` рядом с `ComponentName.tsx`.
+- Тесты: `FileName.test.ts(x)` рядом с тестируемым файлом; расширение теста совпадает с расширением файла.
+- У каждого файла `.ts`/`.tsx` есть свой тест. Исключения: стили, файлы только с типами (`types.ts`, `*.d.ts`),
+  точка входа `main.tsx` и тестовые фикстуры/хелперы (`test*.ts(x)`, например `testShows.ts`, `testStore.tsx`).
+- View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`) и замоканными дочерними
+  компонентами, presenter — через `renderHookWithStore` из `@src/store/testStore` с замоканными задачами.
+- Задачи тестируем как обычные функции, без React. API мокаем (`vi.mock('@src/api/showsApi')`).
+  - Обычно мокаем фасад (`vi.mock('@src/store/shows/showsStore')`) и проверяем вызовы его операций —
+    такой тест не зависит от библиотеки store.
+  - Когда важно реальное поведение данных (гонки запросов), используем настоящий store: мокаем модуль store
+    фабрикой `mockStoreModule` из `@src/store/testAppStore`, в `beforeEach` берём свежий store через
+    `resetAppStore()` и проверяем `store.getState()`. Так же тестируем сами фасады.
+
+## 7. Размер файлов
+
+- Каждый файл — максимум 120 строк (включая импорты и типы).
+- Если файл длиннее — разбиваем его на абстракции (дочерние компоненты, отдельные хуки, вспомогательные функции).
