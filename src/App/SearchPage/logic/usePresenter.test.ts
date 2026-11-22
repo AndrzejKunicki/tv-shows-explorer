@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Show } from '@src/api/types';
-import { resultsRestored, searchFailed, searchStarted } from '@src/store/shows/showsSlice';
-import { makeShow } from '@src/store/shows/testShows';
+import { resultsReceived, searchFailed, searchStarted } from '@src/store/shows/showsSlice';
+import { makeSearchPage, makeShow } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
 import { usePresenter } from './usePresenter';
 
 const withResults = (items: Show[]) => {
   const store = createStore();
-  store.dispatch(resultsRestored({ query: 'lost', items }));
+  store.dispatch(resultsReceived(makeSearchPage({ query: 'lost', items })));
 
   return renderHookWithStore(usePresenter, store).result.current;
 };

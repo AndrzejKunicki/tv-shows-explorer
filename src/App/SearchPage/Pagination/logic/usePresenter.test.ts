@@ -1,7 +1,7 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { pageChanged, PAGE_SIZE, resultsRestored } from '@src/store/shows/showsSlice';
-import { makeShow } from '@src/store/shows/testShows';
+import { resultsReceived } from '@src/store/shows/showsSlice';
+import { makeSearchPage } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
 import { goToNextPage } from './tasks/goToNextPage';
@@ -11,36 +11,34 @@ import { usePresenter } from './usePresenter';
 vi.mock('./tasks/goToNextPage', () => ({ goToNextPage: vi.fn() }));
 vi.mock('./tasks/goToPreviousPage', () => ({ goToPreviousPage: vi.fn() }));
 
-const renderWithShows = (count: number, page = 1) => {
+const renderOnPage = (page: number, pageCount: number) => {
   const store = createStore();
-  const items = Array.from({ length: count }, (_, index) => makeShow(index + 1, []));
-  store.dispatch(resultsRestored({ query: 'q', items }));
-  store.dispatch(pageChanged(page));
+  store.dispatch(resultsReceived(makeSearchPage({ page, pageCount })));
 
   return renderHookWithStore(usePresenter, store);
 };
 
 describe('Pagination usePresenter', () => {
   it('is hidden when everything fits on one page', () => {
-    const { result } = renderWithShows(PAGE_SIZE);
+    const { result } = renderOnPage(1, 1);
 
     expect(result.current.isVisible).toBe(false);
   });
 
   it('describes the first of several pages', () => {
-    const { result } = renderWithShows(PAGE_SIZE * 2 + 1);
+    const { result } = renderOnPage(1, 3);
 
     expect(result.current).toMatchObject({ isVisible: true, label: 'Page 1 of 3', canGoPrev: false, canGoNext: true });
   });
 
-  it('shows the last page when the stored page is out of range', () => {
-    const { result } = renderWithShows(PAGE_SIZE * 2, 5);
+  it('describes the last page', () => {
+    const { result } = renderOnPage(2, 2);
 
     expect(result.current).toMatchObject({ label: 'Page 2 of 2', canGoPrev: true, canGoNext: false });
   });
 
   it('calls the tasks for the next and previous page', () => {
-    const { result } = renderWithShows(PAGE_SIZE * 3, 2);
+    const { result } = renderOnPage(2, 3);
 
     act(() => result.current.handleNext());
     act(() => result.current.handlePrev());

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchShowIndex } from '@src/api/tvmaze';
+import { fetchShowIndex } from '@src/api/showsApi';
 import { testShows } from '@src/store/shows/testShows';
 import type { AppStore } from '@src/store/store';
 import { resetAppStore } from '@src/store/testAppStore';
 import { loadGems } from './loadGems';
 
-vi.mock('@src/api/tvmaze', () => ({ fetchShowIndex: vi.fn() }));
+vi.mock('@src/api/showsApi', () => ({ fetchShowIndex: vi.fn() }));
 vi.mock('@src/store/store', async (importOriginal) => {
   const { mockStoreModule } = await import('@src/store/testAppStore');
 

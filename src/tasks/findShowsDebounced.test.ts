@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { searchShows } from '@src/api/tvmaze';
-import { makeShow, testShows } from '@src/store/shows/testShows';
+import { searchShows } from '@src/api/showsApi';
+import { makeSearchPage, testShows } from '@src/store/shows/testShows';
 import type { AppStore } from '@src/store/store';
 import { resetAppStore } from '@src/store/testAppStore';
 import { findShows } from './findShows';
@@ -8,7 +8,7 @@ import { findShowsDebounced, SEARCH_DEBOUNCE_MS } from './findShowsDebounced';
 import { cancelSearch } from './searchRequest';
 import { deferredRequest } from './testSearchRequests';
 
-vi.mock('@src/api/tvmaze', () => ({ searchShows: vi.fn() }));
+vi.mock('@src/api/showsApi', () => ({ searchShows: vi.fn() }));
 vi.mock('@src/store/store', async (importOriginal) => {
   const { mockStoreModule } = await import('@src/store/testAppStore');
 
@@ -21,7 +21,7 @@ describe('findShowsDebounced', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    searchShowsMock.mockReset().mockResolvedValue(testShows);
+    searchShowsMock.mockReset().mockResolvedValue(makeSearchPage({ items: testShows }));
     store = resetAppStore();
   });
 
@@ -38,8 +38,8 @@ describe('findShowsDebounced', () => {
 
     await vi.advanceTimersByTimeAsync(1);
 
-    expect(searchShowsMock).toHaveBeenCalledWith('lost', expect.anything());
-    expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'lost', items: testShows });
+    expect(searchShowsMock).toHaveBeenCalledWith(expect.objectContaining({ query: 'lost' }), expect.anything());
+    expect(store.getState().shows).toMatchObject({ status: 'succeeded', items: testShows });
   });
 
   it('searches only for the last text typed within the debounce time', async () => {
@@ -49,7 +49,7 @@ describe('findShowsDebounced', () => {
     await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
 
     expect(searchShowsMock).toHaveBeenCalledTimes(1);
-    expect(searchShowsMock).toHaveBeenCalledWith('lost', expect.anything());
+    expect(searchShowsMock).toHaveBeenCalledWith(expect.objectContaining({ query: 'lost' }), expect.anything());
   });
 
   it('does not search when cancelled', async () => {
@@ -65,7 +65,7 @@ describe('findShowsDebounced', () => {
     findShows('breaking');
 
     findShowsDebounced('lost');
-    old.resolve([makeShow(99, [])]);
+    old.resolve(makeSearchPage({ query: 'breaking', items: testShows.slice(0, 1) }));
     await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS - 1);
 
     expect(old.signal?.aborted).toBe(true);
@@ -73,6 +73,6 @@ describe('findShowsDebounced', () => {
 
     await vi.advanceTimersByTimeAsync(1);
 
-    expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'lost', items: testShows });
+    expect(store.getState().shows).toMatchObject({ status: 'succeeded', items: testShows });
   });
 });

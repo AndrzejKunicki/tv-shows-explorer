@@ -1,17 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppStore } from '@src/store/store';
 import { resetAppStore } from '@src/store/testAppStore';
-import { PAGE_SIZE } from './showsSlice';
 import { showsStore } from './showsStore';
-import { makeShow, testShows } from './testShows';
+import { makeSearchPage, testShows } from './testShows';
 
 vi.mock('@src/store/store', async (importOriginal) => {
   const { mockStoreModule } = await import('@src/store/testAppStore');
 
   return mockStoreModule(importOriginal);
 });
-
-const manyShows = Array.from({ length: PAGE_SIZE * 2 }, (_, index) => makeShow(index + 1, ['Drama']));
 
 describe('showsStore', () => {
   let store: AppStore;
@@ -20,16 +17,16 @@ describe('showsStore', () => {
     store = resetAppStore();
   });
 
-  it('runs a search: started, received and cached', () => {
+  it('runs a search: started, then the results page received', () => {
     showsStore.startSearch('lost');
 
     expect(store.getState().shows).toMatchObject({ status: 'loading', query: 'lost' });
 
-    showsStore.receiveResults('lost', testShows);
+    showsStore.receiveResults(makeSearchPage({ items: testShows, page: 2, pageCount: 3 }));
 
     expect(store.getState().shows).toMatchObject({ status: 'succeeded', items: testShows });
-    expect(showsStore.getCachedResults(' LOST ')).toEqual(testShows);
-    expect(showsStore.getCachedResults('other')).toBeNull();
+    expect(showsStore.getPage()).toBe(2);
+    expect(showsStore.getPageCount()).toBe(3);
   });
 
   it('stores a failed search', () => {
@@ -39,22 +36,32 @@ describe('showsStore', () => {
     expect(store.getState().shows).toMatchObject({ status: 'failed', error: 'Network down', items: [] });
   });
 
-  it('restores results and clears the search', () => {
-    showsStore.restoreResults('lost', testShows);
-
-    expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'lost', items: testShows });
-
+  it('clears the search', () => {
+    showsStore.receiveResults(makeSearchPage({ items: testShows }));
     showsStore.clearSearch();
 
     expect(store.getState().shows).toMatchObject({ status: 'idle', query: '', items: [] });
   });
 
-  it('reads and writes the page', () => {
-    showsStore.restoreResults('q', manyShows);
+  it('returns the search parameters of the results page', () => {
+    showsStore.startSearch('lost');
+    showsStore.selectGenre('Drama');
+    showsStore.setSort('rating');
     showsStore.setPage(2);
 
-    expect(showsStore.getPage()).toBe(2);
-    expect(showsStore.getPageCount()).toBe(2);
+    expect(showsStore.getSearchParams()).toEqual({ query: 'lost', genre: 'Drama', sort: 'rating', page: 2 });
+    expect(showsStore.getSortBy()).toBe('rating');
+  });
+
+  it('tells whether the results of the query are shown', () => {
+    showsStore.startSearch('lost');
+
+    expect(showsStore.hasResultsFor('lost')).toBe(false);
+
+    showsStore.receiveResults(makeSearchPage({ query: 'lost' }));
+
+    expect(showsStore.hasResultsFor('lost')).toBe(true);
+    expect(showsStore.hasResultsFor('lost girl')).toBe(false);
   });
 
   it('selects and resets the genre', () => {

@@ -1,6 +1,7 @@
 # Simple Architecture
 
-Стек: React + Vite + TypeScript. Источник данных: TVMaze API (https://api.tvmaze.com).
+Стек: клиент — React + Vite + TypeScript (`src/`), backend — Express + Node + TypeScript (`server/`, §8).
+Источник данных: TVMaze API (https://api.tvmaze.com); к нему обращается только backend.
 
 ## 1. Дерево каталогов = иерархия компонентов
 
@@ -51,7 +52,7 @@ src/
     Spinner/
       Spinner.tsx
   api/
-    tvmaze.ts
+    showsApi.ts
     types.ts
 ```
 
@@ -132,15 +133,15 @@ View ──событие──▶ Presenter ──вызов──▶ Task ─�
 
 ```ts
 // SearchPage/logic/tasks/findShows.ts — без React, store домена импортируется напрямую
-import { searchShows } from '@src/api/tvmaze';
+import { searchShows } from '@src/api/showsApi';
 import { showsStore } from '@src/store/shows/showsStore';
 
 type FindShowsResult = { error: string | null };
 
 export const findShows = async (query: string): Promise<FindShowsResult> => {
   try {
-    const items = await searchShows(query);
-    showsStore.receiveResults(query, items);
+    const page = await searchShows({ query, genre: null, sort: 'relevance', page: 1 });
+    showsStore.receiveResults(page);
 
     return { error: null };
   } catch (error) {
@@ -206,7 +207,7 @@ const handleNext = () => dispatch(pageChanged(page + 1));
 
 ```ts
 // ✅ Явно: SearchPage/logic/tasks/loadShowsPage.ts
-import { fetchShowIndex } from '@src/api/tvmaze';
+import { fetchShowIndex } from '@src/api/showsApi';
 import { showsStore } from '@src/store/shows/showsStore';
 
 type LoadShowsPageResult = { error: string | null };
@@ -337,6 +338,10 @@ export const usePresenter = () => {
 
 - Вызовы API — в `src/api/`. Функции из `src/api/` вызывают задачи (`tasks/`); `fetch` напрямую
   не вызывает никто, кроме `src/api/`.
+- Клиент обращается только к своему backend (`src/api/showsApi.ts` → `/api/...`), никогда к TVmaze напрямую.
+  Поиск, фильтр жанров, сортировка, пагинация и кэш ответов TVmaze — на backend; клиент получает готовую
+  страницу результатов и хранит её в store. Адрес backend в production-сборке — `VITE_API_URL`,
+  локально Vite проксирует `/api` на `localhost:3000`.
 - Типы лежат рядом с тем, к чему относятся: типы view/компонента — в его каталоге,
   типы API — в `src/api/`.
 - Общий принцип (colocation): код лежит как можно ближе к месту использования; только когда он
@@ -357,8 +362,8 @@ export const usePresenter = () => {
 - В presenter используем только типизированные хуки из `src/store/hooks.ts`, а не «голые»
   `useSelector`/`useDispatch`. Задачи хуки не используют и не импортируют `store`, экшены и селекторы
   напрямую — только фасад; `store.getState()` и `store.dispatch(...)` вызывает только фасад.
-- Производные данные (фильтрация, пагинация, уникальные значения) вычисляем в селекторах (`createSelector`),
-  а не в компонентах.
+- Производные данные, которые клиент считает сам (например, ряды подборок), вычисляем в селекторах
+  (`createSelector`), а не в компонентах. Фильтрацию, сортировку и пагинацию результатов поиска делает backend.
 - Thunk и саги (`createAsyncThunk`, `redux-thunk`, `redux-saga`) не используем: асинхронные операции —
   это задачи, которые вызывают функции из `src/api/` и пишут результат в store.
 - Локальное состояние UI, которое не нужно другим компонентам (значение инпута, loading/error одного
@@ -369,18 +374,18 @@ export const usePresenter = () => {
 - Стили и тесты лежат рядом с файлами, к которым относятся, — в том же каталоге.
 - Стили: `ComponentName.module.css` рядом с `ComponentName.tsx`.
 - Тесты: `FileName.test.ts(x)` рядом с тестируемым файлом, например `SearchBar.test.tsx`,
-  `usePresenter.test.ts`, `tvmaze.test.ts`. Расширение теста совпадает с расширением файла:
+  `usePresenter.test.ts`, `showsApi.test.ts`. Расширение теста совпадает с расширением файла:
   `Foo.tsx` → `Foo.test.tsx`, `foo.ts` → `foo.test.ts`.
-- У каждого файла `.ts`/`.tsx` в `src/` есть свой тест. Исключения: стили (`*.css`), файлы только
-  с типами (`types.ts`), точка входа `main.tsx` и тестовые фикстуры/хелперы (`test*.ts(x)`,
-  например `testShows.ts`, `testStore.tsx`).
+- У каждого файла `.ts`/`.tsx` в `src/` и `server/src/` есть свой тест. Исключения: стили (`*.css`), файлы только
+  с типами (`types.ts`, `*.d.ts`), точки входа `main.tsx` и `server/src/index.ts` и тестовые фикстуры/хелперы
+  (`test*.ts(x)`, например `testShows.ts`, `testStore.tsx`, `testServer.ts`).
 - View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`), presenter — через
   `renderHookWithStore` из `@src/store/testStore` с замоканными задачами (`vi.mock('./tasks/findShows')`).
 - Задачи тестируем как обычные функции, без React и `renderHook`: `tasks/findShows.test.ts` рядом с
-  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/tvmaze')`).
+  `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/showsApi')`).
   - Обычно мокаем фасад (`vi.mock('@src/store/shows/showsStore')`) и проверяем вызовы его операций —
     такой тест не зависит от библиотеки store.
-  - Когда важно реальное поведение данных (кэш, гонки запросов), используем настоящий store: мокаем модуль
+  - Когда важно реальное поведение данных (гонки запросов), используем настоящий store: мокаем модуль
     store фабрикой `mockStoreModule` из `@src/store/testAppStore`, в `beforeEach` берём свежий store
     через `resetAppStore()` и проверяем `store.getState()`. Так же тестируем сам фасад.
 
@@ -401,3 +406,36 @@ SearchBar/
 
 - Каждый файл — максимум 120 строк (включая импорты и типы).
 - Если файл длиннее — разбиваем его на абстракции (дочерние компоненты, отдельные хуки, вспомогательные функции).
+
+## 8. Backend (`server/`)
+
+- Отдельный Node-пакет со своим `package.json`: Render собирает только каталог `server/`. Express 5,
+  TypeScript запускается самим Node (type stripping), без сборки — поэтому только «стираемый» синтаксис
+  (`erasableSyntaxOnly`) и импорты с расширением `.ts`. Импорты внутри пакета — через `#src/...`
+  (поле `imports` в `server/package.json`), а не через `../`.
+- Слои те же, что на клиенте:
+
+```
+server/src/
+  index.ts          — точка входа: порт из PORT, запуск app
+  app.ts            — сборка Express: CORS, роуты, обработчик ошибок
+  routes/           — HTTP: читают и проверяют параметры, вызывают задачу, отдают JSON
+  tasks/            — сценарии: findShowsPage, getShowIndex, getTodayShows, getCached
+  storage/          — данные в памяти (cache.ts) как база: get/set без правил
+  api/              — клиент TVmaze (fetch) и типы
+```
+
+- **Роуты** не содержат бизнес-логики: параметры → задача → ответ. Неверные параметры — `400 { error }`,
+  ошибка TVmaze — `502 { error }` (общий обработчик в `app.ts`).
+- **Задачи** не знают об Express и HTTP: получают параметры и возвращают данные.
+- **Кэш** — обычный объект `const cache = {}` в `storage/cache.ts`. Задача `getCached(key, load)`: если такой же
+  запрос к TVmaze выполнялся меньше 5 минут назад, возвращает данные из кэша, иначе обращается к TVmaze
+  и обновляет кэш. Неудачный запрос не кэшируется, устаревшие записи удаляются при записи новых.
+  Ключ — смысл запроса (`search:<фраза в нижнем регистре>`, `index:<page>`, `schedule:<country>`),
+  поэтому фильтр, сортировка и страницы одного поиска не вызывают новых запросов к TVmaze.
+- Типы ответа (`Show`, `SearchPage`) описаны и в `server/src/api/types.ts`, и в `src/api/types.ts`:
+  пакеты собираются отдельно. При изменении ответа меняем оба файла.
+- Тесты backend лежат рядом с файлами и запускаются тем же `npm test` (проект Vitest `server`,
+  окружение `node`). Роуты тестируем через `request()` из `testServer.ts` (настоящий HTTP на свободном порту)
+  с замоканными задачами; задачи — с замоканным `api/tvmaze.ts` и очищенным кэшем (`cacheStorage.clear()`).
+- Деплой: Render по `render.yaml`. В production CORS разрешён только домену клиента (`CORS_ORIGIN`).

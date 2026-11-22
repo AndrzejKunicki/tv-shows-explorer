@@ -1,4 +1,4 @@
-import type { Show } from '@src/api/types';
+import type { SearchPage, Show } from '@src/api/types';
 
 export const makeShow = (id: number, genres: string[]): Show => ({
   id,
@@ -22,3 +22,14 @@ export const testShows: Show[] = [
   makeShow(6, []),
   makeShow(7, ['Crime']),
 ];
+
+/** A page of search results as the server sends it. */
+export const makeSearchPage = (overrides: Partial<SearchPage> = {}): SearchPage => ({
+  query: 'lost',
+  items: [],
+  page: 1,
+  pageCount: 1,
+  total: 0,
+  genres: [],
+  ...overrides,
+});

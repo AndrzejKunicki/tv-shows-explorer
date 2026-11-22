@@ -1,0 +1,17 @@
+# Render Blueprint: the backend (server/) as a long-running Node process.
+# The client is deployed separately to GitHub Pages (.github/workflows/deploy.yml).
+services:
+  - type: web
+    name: tv-shows-explorer-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Only the GitHub Pages client may call the API
+      - key: CORS_ORIGIN
+        value: https://andrzejkunicki.github.io

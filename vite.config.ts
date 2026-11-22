@@ -11,8 +11,28 @@ export default defineConfig({
     // Alias: import from "@src/store/hooks" instead of "../../../store/hooks" (see tsconfig.app.json)
     alias: { '@src': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  server: {
+    // Locally the API runs on its own port (`npm run dev:server`); the client calls it as /api/...
+    proxy: { '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000' },
+  },
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'client',
+          include: ['src/**/*.test.{ts,tsx}'],
+          environment: 'jsdom',
+          setupFiles: ['./vitest.setup.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'server',
+          include: ['server/src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
+    ],
   },
 })

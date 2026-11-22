@@ -1,9 +1,9 @@
 import type { Mock } from 'vitest';
-import type { Show } from '@src/api/types';
+import type { SearchPage, SearchParams } from '@src/api/types';
 
-type SearchShows = (query: string, signal?: AbortSignal) => Promise<Show[]>;
+type SearchShows = (params: SearchParams, signal?: AbortSignal) => Promise<SearchPage>;
 
-/** Lets mocked API promises and thunks settle. */
+/** Lets mocked API promises settle. */
 export const settle = () => new Promise((resolve) => setTimeout(resolve));
 
 /**
@@ -11,10 +11,10 @@ export const settle = () => new Promise((resolve) => setTimeout(resolve));
  * or rejected by its abort signal, like `fetch` does.
  */
 export const deferredRequest = (searchShowsMock: Mock<SearchShows>) => {
-  const request = { resolve: (_shows: Show[]) => {}, signal: undefined as AbortSignal | undefined };
+  const request = { resolve: (_page: SearchPage) => {}, signal: undefined as AbortSignal | undefined };
   searchShowsMock.mockImplementationOnce(
-    (_query, signal) =>
-      new Promise<Show[]>((onResolve, onReject) => {
+    (_params, signal) =>
+      new Promise<SearchPage>((onResolve, onReject) => {
         request.resolve = onResolve;
         request.signal = signal;
         signal?.addEventListener('abort', () => onReject(new DOMException('Aborted', 'AbortError')));
