@@ -17,13 +17,11 @@ export interface ReelRow {
   posters: ReelPoster[];
 }
 
-const selectReelShows = (state: RootState) => state.discover.index.shows;
+const selectReelShows = (state: RootState) => state.discover.topRated.shows;
 
-/** Best rated shows that have a poster, split into rows for the background wall. */
+/** The top rated shows (with posters, chosen by the server), laid out in rows for the background wall. */
 export const selectReelRows = createSelector([selectReelShows], (shows): ReelRow[] => {
   const posters = shows
-    .filter((show) => show.image && show.rating.average)
-    .sort((a, b) => (b.rating.average ?? 0) - (a.rating.average ?? 0))
     .slice(0, REEL_ROWS * REEL_POSTERS_PER_ROW)
     .map((show) => ({ id: show.id, imageUrl: show.image?.medium ?? '' }));
 

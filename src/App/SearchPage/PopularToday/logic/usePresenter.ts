@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { selectPopularToday } from '@src/store/discover/selectors';
 import { useAppSelector } from '@src/store/hooks';
 import { selectStatus } from '@src/store/shows/selectors';
-import { loadTodaySchedule } from '@src/tasks/loadTodaySchedule';
+import { loadAiringToday } from '@src/tasks/loadAiringToday';
 import { pickSuggestion } from './tasks/pickSuggestion';
 
 export const usePresenter = () => {
@@ -10,7 +10,7 @@ export const usePresenter = () => {
   const status = useAppSelector(selectStatus);
 
   useEffect(() => {
-    loadTodaySchedule();
+    loadAiringToday();
   }, []);
 
   // One click fills the search field and starts the search

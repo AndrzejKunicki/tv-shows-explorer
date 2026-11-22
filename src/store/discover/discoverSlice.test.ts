@@ -8,26 +8,26 @@ describe('discover slice', () => {
   });
 
   it('gives every feed its own initial object', () => {
-    expect(initialState.index).not.toBe(initialState.schedule);
-    expect(initialState.schedule).not.toBe(initialState.gems);
+    expect(initialState.topRated).not.toBe(initialState.airingToday);
+    expect(initialState.airingToday).not.toBe(initialState.hiddenGems);
   });
 
   it('marks a requested feed as loading', () => {
-    const state = discoverReducer(initialState, feedRequested('index'));
+    const state = discoverReducer(initialState, feedRequested('topRated'));
 
-    expect(state.index.status).toBe('loading');
-    expect(state.schedule.status).toBe('idle');
+    expect(state.topRated.status).toBe('loading');
+    expect(state.airingToday.status).toBe('idle');
   });
 
   it('stores the shows of a loaded feed', () => {
-    const state = discoverReducer(initialState, feedLoaded({ feed: 'gems', shows: testShows }));
+    const state = discoverReducer(initialState, feedLoaded({ feed: 'hiddenGems', shows: testShows }));
 
-    expect(state.gems).toEqual({ status: 'succeeded', shows: testShows });
+    expect(state.hiddenGems).toEqual({ status: 'succeeded', shows: testShows });
   });
 
   it('marks a feed as failed', () => {
-    const state = discoverReducer(discoverReducer(initialState, feedRequested('schedule')), feedFailed('schedule'));
+    const state = discoverReducer(discoverReducer(initialState, feedRequested('airingToday')), feedFailed('airingToday'));
 
-    expect(state.schedule).toEqual({ status: 'failed', shows: [] });
+    expect(state.airingToday).toEqual({ status: 'failed', shows: [] });
   });
 });

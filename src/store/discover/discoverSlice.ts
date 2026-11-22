@@ -2,22 +2,22 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Show } from '@src/api/types';
 
 export type FeedStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
-export type FeedName = 'index' | 'schedule' | 'gems';
+export type FeedName = 'airingToday' | 'topRated' | 'hiddenGems';
 
 export interface Feed {
   shows: Show[];
   status: FeedStatus;
 }
 
-/** Data for the start page: the decorative poster wall and the discovery rows. */
+/** Rows for the start page as the server sends them; the poster wall is built from `topRated`. */
 export type DiscoverState = Record<FeedName, Feed>;
 
 const createEmptyFeed = (): Feed => ({ shows: [], status: 'idle' });
 
 export const initialState: DiscoverState = {
-  index: createEmptyFeed(),
-  schedule: createEmptyFeed(),
-  gems: createEmptyFeed(),
+  airingToday: createEmptyFeed(),
+  topRated: createEmptyFeed(),
+  hiddenGems: createEmptyFeed(),
 };
 
 const discoverSlice = createSlice({

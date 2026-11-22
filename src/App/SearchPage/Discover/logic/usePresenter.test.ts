@@ -3,14 +3,14 @@ import { feedLoaded } from '@src/store/discover/discoverSlice';
 import { withPoster } from '@src/store/discover/testState';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
-import { loadShowIndex } from '@src/tasks/loadShowIndex';
-import { loadTodaySchedule } from '@src/tasks/loadTodaySchedule';
-import { loadGems } from './tasks/loadGems';
+import { loadTopRated } from '@src/tasks/loadTopRated';
+import { loadAiringToday } from '@src/tasks/loadAiringToday';
+import { loadHiddenGems } from './tasks/loadHiddenGems';
 import { usePresenter } from './usePresenter';
 
-vi.mock('@src/tasks/loadShowIndex', () => ({ loadShowIndex: vi.fn() }));
-vi.mock('@src/tasks/loadTodaySchedule', () => ({ loadTodaySchedule: vi.fn() }));
-vi.mock('./tasks/loadGems', () => ({ loadGems: vi.fn() }));
+vi.mock('@src/tasks/loadTopRated', () => ({ loadTopRated: vi.fn() }));
+vi.mock('@src/tasks/loadAiringToday', () => ({ loadAiringToday: vi.fn() }));
+vi.mock('./tasks/loadHiddenGems', () => ({ loadHiddenGems: vi.fn() }));
 
 const gems = [1, 2, 3, 4, 5, 6].map((id) => withPoster(100 + id, 8, 50));
 
@@ -18,9 +18,9 @@ describe('Discover usePresenter', () => {
   it('loads the schedule, the index and the gems on mount', () => {
     renderHookWithStore(usePresenter);
 
-    expect(loadTodaySchedule).toHaveBeenCalled();
-    expect(loadShowIndex).toHaveBeenCalled();
-    expect(loadGems).toHaveBeenCalled();
+    expect(loadAiringToday).toHaveBeenCalled();
+    expect(loadTopRated).toHaveBeenCalled();
+    expect(loadHiddenGems).toHaveBeenCalled();
   });
 
   it('has no rows while nothing is loaded', () => {
@@ -31,8 +31,8 @@ describe('Discover usePresenter', () => {
 
   it('returns only rows that have shows, in a fixed order', () => {
     const store = createStore();
-    store.dispatch(feedLoaded({ feed: 'index', shows: [withPoster(2, 9)] }));
-    store.dispatch(feedLoaded({ feed: 'gems', shows: gems }));
+    store.dispatch(feedLoaded({ feed: 'topRated', shows: [withPoster(2, 9)] }));
+    store.dispatch(feedLoaded({ feed: 'hiddenGems', shows: gems }));
 
     const { result } = renderHookWithStore(usePresenter, store);
     const ids = result.current.rows.map((row) => row.id);
@@ -43,7 +43,7 @@ describe('Discover usePresenter', () => {
 
   it('shows the airing today row with its shows', () => {
     const store = createStore();
-    store.dispatch(feedLoaded({ feed: 'schedule', shows: [withPoster(1, null)] }));
+    store.dispatch(feedLoaded({ feed: 'airingToday', shows: [withPoster(1, null)] }));
 
     const { result } = renderHookWithStore(usePresenter, store);
 

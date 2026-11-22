@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { selectReelRows } from '@src/store/discover/reelSelectors';
 import { useAppSelector } from '@src/store/hooks';
 import { selectStatus } from '@src/store/shows/selectors';
-import { loadShowIndex } from '@src/tasks/loadShowIndex';
+import { loadTopRated } from '@src/tasks/loadTopRated';
 
 export const usePresenter = () => {
   const rows = useAppSelector(selectReelRows);
@@ -11,7 +11,7 @@ export const usePresenter = () => {
   const [loadedUrls, setLoadedUrls] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
-    loadShowIndex();
+    loadTopRated();
   }, []);
 
   const handleImageLoad = (imageUrl: string) => {

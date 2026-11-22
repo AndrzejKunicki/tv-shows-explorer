@@ -36,8 +36,9 @@ npm run dev          # клиент; запросы /api/... Vite проксир
 | Запрос | Ответ |
 | --- | --- |
 | `GET /api/shows/search?q=lost&genre=Drama&sort=rating&page=2` | Страница результатов: `items`, `page`, `pageCount`, `total`, `genres` |
-| `GET /api/shows/index?page=0` | Страница индекса TVmaze |
-| `GET /api/schedule?country=US` | Сериалы с эпизодами сегодня |
+| `GET /api/discover/airing-today` | Сериалы с эпизодами сегодня в США, самые популярные первыми |
+| `GET /api/discover/top-rated` | Самые высоко оценённые известные сериалы (ряд «Fan favorites» и стена постеров) |
+| `GET /api/discover/hidden-gems` | Высоко оценённые малоизвестные сериалы со случайных страниц индекса |
 | `GET /api/health` | `{ "status": "ok" }` |
 
 ## Деплой

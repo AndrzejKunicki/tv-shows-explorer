@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { selectAiringToday, selectFanFavorites, selectHiddenGems } from '@src/store/discover/selectors';
 import { useAppSelector } from '@src/store/hooks';
-import { loadShowIndex } from '@src/tasks/loadShowIndex';
-import { loadTodaySchedule } from '@src/tasks/loadTodaySchedule';
-import { loadGems } from './tasks/loadGems';
+import { loadAiringToday } from '@src/tasks/loadAiringToday';
+import { loadTopRated } from '@src/tasks/loadTopRated';
+import { loadHiddenGems } from './tasks/loadHiddenGems';
 
 export const usePresenter = () => {
   const airingToday = useAppSelector(selectAiringToday);
@@ -11,9 +11,9 @@ export const usePresenter = () => {
   const hiddenGems = useAppSelector(selectHiddenGems);
 
   useEffect(() => {
-    loadTodaySchedule();
-    loadShowIndex();
-    loadGems();
+    loadAiringToday();
+    loadTopRated();
+    loadHiddenGems();
   }, []);
 
   // A row without data (still loading or failed) is not shown

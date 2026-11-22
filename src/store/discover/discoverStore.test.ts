@@ -18,23 +18,23 @@ describe('discoverStore', () => {
   });
 
   it('reads the status of a feed', () => {
-    expect(discoverStore.getFeedStatus('index')).toBe('idle');
+    expect(discoverStore.getFeedStatus('topRated')).toBe('idle');
 
-    discoverStore.startFeed('index');
+    discoverStore.startFeed('topRated');
 
-    expect(discoverStore.getFeedStatus('index')).toBe('loading');
+    expect(discoverStore.getFeedStatus('topRated')).toBe('loading');
   });
 
   it('stores the shows of a loaded feed', () => {
-    discoverStore.setFeed('gems', testShows);
+    discoverStore.setFeed('hiddenGems', testShows);
 
-    expect(store.getState().discover.gems).toEqual({ status: 'succeeded', shows: testShows });
+    expect(store.getState().discover.hiddenGems).toEqual({ status: 'succeeded', shows: testShows });
   });
 
   it('marks a feed as failed', () => {
-    discoverStore.startFeed('schedule');
-    discoverStore.failFeed('schedule');
+    discoverStore.startFeed('airingToday');
+    discoverStore.failFeed('airingToday');
 
-    expect(discoverStore.getFeedStatus('schedule')).toBe('failed');
+    expect(discoverStore.getFeedStatus('airingToday')).toBe('failed');
   });
 });

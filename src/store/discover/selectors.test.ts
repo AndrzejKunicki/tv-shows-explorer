@@ -1,75 +1,43 @@
 import { describe, expect, it } from 'vitest';
 import {
   DISCOVER_ROW_SIZE,
-  GEM_MIN_COUNT,
   POPULAR_TODAY_COUNT,
   selectAiringToday,
   selectFanFavorites,
   selectFeedStatus,
   selectHiddenGems,
   selectPopularToday,
+  selectTopRated,
 } from './selectors';
 import { discoverState, withPoster } from './testState';
 
-const ids = (shows: { id: number }[]) => shows.map((show) => show.id);
+const shows = (count: number) => Array.from({ length: count }, (_, index) => withPoster(index + 1, 8));
 
 describe('discover selectors', () => {
-  describe('selectAiringToday', () => {
-    it('lists each show once, most popular first, skipping shows without a poster', () => {
-      const schedule = [
-        withPoster(1, 7, 60),
-        withPoster(2, 7, 99),
-        withPoster(1, 7, 60), // second episode of the same show today
-        { ...withPoster(3, 9, 100), image: null },
-      ];
+  it('return the rows as the server sent them', () => {
+    const state = discoverState({ airingToday: shows(2), topRated: shows(3), hiddenGems: shows(4) });
 
-      expect(ids(selectAiringToday(discoverState({ schedule })))).toEqual([2, 1]);
-    });
-
-    it('limits the row size', () => {
-      const schedule = Array.from({ length: 40 }, (_, index) => withPoster(index + 1, 7));
-
-      expect(selectAiringToday(discoverState({ schedule }))).toHaveLength(DISCOVER_ROW_SIZE);
-    });
+    expect(selectAiringToday(state)).toHaveLength(2);
+    expect(selectTopRated(state)).toHaveLength(3);
+    expect(selectHiddenGems(state)).toHaveLength(4);
   });
 
-  it('offers names of the most popular shows airing today as searches', () => {
-    const schedule = Array.from({ length: 10 }, (_, index) => withPoster(index + 1, 7, index));
-    const names = selectPopularToday(discoverState({ schedule }));
+  it('offer the names of the first shows airing today as suggestions', () => {
+    const state = discoverState({ airingToday: shows(POPULAR_TODAY_COUNT + 3) });
 
-    expect(names).toHaveLength(POPULAR_TODAY_COUNT);
-    expect(names[0]).toBe('Show 10');
+    expect(selectPopularToday(state)).toEqual(['Show 1', 'Show 2', 'Show 3', 'Show 4', 'Show 5']);
   });
 
-  it('sorts fan favorites by rating and skips unrated shows', () => {
-    const index = [withPoster(1, 7.5), withPoster(2, null), withPoster(3, 9.1), withPoster(4, 8)];
+  it('fill the "Fan favorites" row with the top of the top rated list', () => {
+    const state = discoverState({ topRated: shows(DISCOVER_ROW_SIZE * 2) });
 
-    expect(ids(selectFanFavorites(discoverState({ index })))).toEqual([3, 4, 1]);
+    expect(selectFanFavorites(state)).toEqual(shows(DISCOVER_ROW_SIZE));
   });
 
-  describe('selectHiddenGems', () => {
-    const gems = Array.from({ length: GEM_MIN_COUNT }, (_, index) => withPoster(index + 1, 8, 70));
+  it('return the status of a feed', () => {
+    const state = discoverState({ hiddenGems: shows(1) });
 
-    it('keeps well rated shows that are not too popular', () => {
-      const shows = [...gems, withPoster(50, 9, 95), withPoster(51, 7, 60)];
-      const result = ids(selectHiddenGems(discoverState({ gems: shows })));
-
-      expect(result).toHaveLength(GEM_MIN_COUNT);
-      expect(result).not.toContain(50); // too popular
-      expect(result).not.toContain(51); // rated too low
-    });
-
-    it('returns nothing when there are too few gems to fill a row', () => {
-      expect(selectHiddenGems(discoverState({ gems: gems.slice(1) }))).toEqual([]);
-    });
-  });
-});
-
-describe('selectFeedStatus', () => {
-  it('returns the status of the given feed', () => {
-    const state = discoverState({ gems: [withPoster(1, 8)] });
-
-    expect(selectFeedStatus(state, 'gems')).toBe('succeeded');
-    expect(selectFeedStatus(state, 'index')).toBe('idle');
+    expect(selectFeedStatus(state, 'hiddenGems')).toBe('succeeded');
+    expect(selectFeedStatus(state, 'topRated')).toBe('idle');
   });
 });
