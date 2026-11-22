@@ -5,6 +5,9 @@ import { toastHidden, type Toast } from '@src/store/toasts/toastsSlice';
 /** How long a toast stays on screen. */
 export const TOAST_DURATION_MS = 3000;
 
+/** A check mark for success, an exclamation mark for an error. */
+export const ICON_PATHS = { success: 'm5 12.5 4.5 4.5L19 7.5', error: 'M12 7v6m0 4h.01' };
+
 export const usePresenter = ({ toast }: { toast: Toast }) => {
   const dispatch = useAppDispatch();
 
@@ -17,5 +20,7 @@ export const usePresenter = ({ toast }: { toast: Toast }) => {
 
   const handleClose = () => dispatch(toastHidden(toast.id));
 
-  return { message: toast.message, tone: toast.tone, handleClose };
+  const iconPath = ICON_PATHS[toast.tone];
+
+  return { message: toast.message, tone: toast.tone, iconPath, handleClose };
 };
