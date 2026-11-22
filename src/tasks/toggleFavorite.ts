@@ -8,8 +8,13 @@ export type ToggleFavoriteResult = { error: string | null; isFavorite: boolean }
 /**
  * Adds the show to the favorites or removes it, on the server. The local copy changes only after the
  * server has confirmed, so a failed request leaves the star as it was. Returns the new state for the toast.
+ * `waitBeforeAdding` runs after the server has confirmed an add and before the local list changes,
+ * e.g. an animation, so the counter grows only when it ends.
  */
-export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> => {
+export const toggleFavorite = async (
+  show: Show,
+  waitBeforeAdding: () => Promise<void> = async () => {},
+): Promise<ToggleFavoriteResult> => {
   const wasFavorite = favoritesStore.isFavorite(show.id);
 
   try {
@@ -18,6 +23,7 @@ export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> 
       favoritesStore.remove(show.id);
     } else {
       const saved = await addFavorite(show.id);
+      await waitBeforeAdding();
       favoritesStore.add(saved);
     }
 
