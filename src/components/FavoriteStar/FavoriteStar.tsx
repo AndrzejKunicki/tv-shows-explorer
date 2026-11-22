@@ -14,7 +14,7 @@ export const FavoriteStar = (props: { show: Show }) => {
       aria-pressed={isFavorite}
       aria-label={label}
       title={label}
-      disabled={isPending}
+      aria-disabled={isPending}
       onClick={handleClick}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -73,6 +73,11 @@ describe('FavoriteStar usePresenter', () => {
 
     expect(result.current.isPending).toBe(true);
 
+    // A second click while the server is answering is ignored
+    await act(() => result.current.handleClick());
+
+    expect(toggleFavoriteMock).toHaveBeenCalledTimes(1);
+
     await act(async () => {
       finish({ error: null, isFavorite: true });
       await click;

@@ -48,7 +48,7 @@
   fill: currentColor;
 }
 
-.star:disabled {
+.star[aria-disabled='true'] {
   cursor: progress;
   opacity: 0.6;
 }

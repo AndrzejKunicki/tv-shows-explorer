@@ -58,4 +58,17 @@ describe('Favorites usePresenter', () => {
 
     expect(result.current.isOpen).toBe(false);
   });
+
+  it('returns keyboard focus to the button when the list closes', () => {
+    const { result } = renderHookWithStore(usePresenter);
+    const button = document.createElement('button');
+    document.body.append(button);
+    result.current.buttonRef.current = button;
+    act(() => result.current.handleToggle());
+
+    act(() => result.current.handleClose());
+
+    expect(document.activeElement).toBe(button);
+    button.remove();
+  });
 });

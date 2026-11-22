@@ -4,11 +4,12 @@ import { usePresenter } from './logic/usePresenter';
 
 /** Button with the number of favorites in the corner; it opens the list. */
 export const Favorites = () => {
-  const { count, isOpen, buttonLabel, handleToggle, handleClose } = usePresenter();
+  const { count, isOpen, buttonRef, buttonLabel, handleToggle, handleClose } = usePresenter();
 
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
         className={styles.button}
         aria-label={buttonLabel}

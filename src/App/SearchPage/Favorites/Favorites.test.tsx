@@ -10,6 +10,7 @@ const usePresenterMock = vi.mocked(usePresenter);
 const presenter = {
   count: 3,
   isOpen: false,
+  buttonRef: { current: null },
   buttonLabel: 'Favorites: 3 shows',
   handleToggle: vi.fn(),
   handleClose: vi.fn(),

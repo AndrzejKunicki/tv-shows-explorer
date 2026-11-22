@@ -27,7 +27,7 @@ describe('FavoriteStar', () => {
     expect(screen.getByRole('button', { name: 'Remove Lost from favorites' }).getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('calls the handler on click and is disabled while pending', () => {
+  it('calls the handler on click and stays focusable while pending', () => {
     usePresenterMock.mockReturnValue(presenter);
     const { rerender } = render(<FavoriteStar show={makeShow(1, [])} />);
 
@@ -38,6 +38,9 @@ describe('FavoriteStar', () => {
     usePresenterMock.mockReturnValue({ ...presenter, isPending: true });
     rerender(<FavoriteStar show={makeShow(1, [])} />);
 
-    expect((screen.getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+    const button = screen.getByRole('button') as HTMLButtonElement;
+
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.disabled).toBe(false);
   });
 });

@@ -16,10 +16,14 @@ const toToastMessage = (name: string, result: ToggleFavoriteResult) => {
 export const usePresenter = ({ show }: { show: Show }) => {
   const dispatch = useAppDispatch();
   const isFavorite = useAppSelector((state) => selectIsFavorite(state, show.id));
-  // Blocks double clicks while the server is answering
+  // Ignores more clicks while the server is answering. Not `disabled`: a disabled button loses keyboard focus
   const [isPending, setIsPending] = useState(false);
 
   const handleClick = async () => {
+    if (isPending) {
+      return;
+    }
+
     setIsPending(true);
     const result = await toggleFavorite(show);
     setIsPending(false);

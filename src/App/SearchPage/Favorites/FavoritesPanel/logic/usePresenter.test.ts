@@ -16,7 +16,7 @@ describe('FavoritesPanel usePresenter', () => {
   it('returns the favorite shows without a message', () => {
     const result = renderWith(favoritesLoaded([makeShow(1, [])]));
 
-    expect(result).toEqual({ shows: [makeShow(1, [])], message: null });
+    expect(result).toMatchObject({ shows: [makeShow(1, [])], message: null });
   });
 
   it('explains how to add favorites when there are none', () => {
