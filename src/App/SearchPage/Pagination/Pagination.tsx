@@ -1,5 +1,5 @@
 import styles from './Pagination.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const Pagination = () => {
   const { isVisible, label, canGoPrev, canGoNext, handlePrev, handleNext } = usePresenter();

@@ -103,6 +103,8 @@ View ──событие──▶ Presenter ──вызов──▶ Task ─�
 - **Название — глагол**, описывающий действие: `logout`, `unsubscribe`, `findShows`.
   Один файл — одна задача, имя файла совпадает с именем функции: `tasks/findShows.ts`.
 - **Расположение:** каталог `tasks/` на том же уровне, что и `usePresenter.ts`: `ComponentName/logic/tasks/`.
+  Задача, которую вызывают несколько компонентов, переносится в общий каталог `src/tasks/`
+  (тот же принцип colocation, что в §4): например, `src/tasks/findShows.ts` вызывают `SearchBar` и `PopularToday`.
 - **Одна задача — одна функция снаружи.** Внутри её можно разбить на сколько угодно мелких функций
   (и файлов), но вызывающий видит один вызов. Самостоятельный кусок, нужный в разных сценариях,
   выносится в отдельную задачу и вызывается из этой как обычная функция (`logout` → `unsubscribeFromPush`).
@@ -375,6 +377,8 @@ export const usePresenter = () => {
 - Задачи тестируем как обычные функции, без React и `renderHook`: `tasks/findShows.test.ts` рядом с
   `tasks/findShows.ts`. API мокаем (`vi.mock('@src/api/tvmaze')`), результат проверяем по возвращаемому
   значению и по `store.getState()`.
+  Чтобы тесты не делили один экземпляр `store`, мокаем модуль store фабрикой `mockStoreModule` из
+  `@src/store/testAppStore`, а в `beforeEach` берём свежий store через `resetAppStore()`.
 
 ```
 SearchBar/

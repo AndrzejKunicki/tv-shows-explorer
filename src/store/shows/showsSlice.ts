@@ -1,5 +1,4 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { searchShows } from '@src/api/tvmaze';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Show } from '@src/api/types';
 import { addToCache, toCacheKey, type CachedSearch } from './searchCache';
 
@@ -34,10 +33,6 @@ export const initialState: ShowsState = {
   cache: [],
 };
 
-export const fetchShows = createAsyncThunk('shows/fetch', (query: string, { signal }) =>
-  searchShows(query, signal),
-);
-
 const showsSlice = createSlice({
   name: 'shows',
   initialState,
@@ -50,6 +45,23 @@ const showsSlice = createSlice({
     sortChanged: (state, action: PayloadAction<SortBy>) => {
       state.sortBy = action.payload;
       state.page = 1;
+    },
+    searchStarted: (state, action: PayloadAction<string>) => {
+      state.query = action.payload;
+      state.status = 'loading';
+      state.error = null;
+      state.selectedGenre = null;
+      state.page = 1;
+    },
+    resultsReceived: (state, action: PayloadAction<{ query: string; items: Show[] }>) => {
+      state.cache = addToCache(state.cache, toCacheKey(action.payload.query), action.payload.items);
+      state.items = action.payload.items;
+      state.status = 'succeeded';
+    },
+    searchFailed: (state, action: PayloadAction<string>) => {
+      state.items = [];
+      state.status = 'failed';
+      state.error = action.payload;
     },
     resultsRestored: (state, action: PayloadAction<{ query: string; items: Show[] }>) => {
       state.query = action.payload.query;
@@ -71,37 +83,15 @@ const showsSlice = createSlice({
       state.page = action.payload;
     },
   },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchShows.pending, (state, action) => {
-        state.query = action.meta.arg;
-        state.status = 'loading';
-        state.error = null;
-        state.selectedGenre = null;
-        state.page = 1;
-      })
-      // An outdated request never gets here: `searchQuery` aborts it before starting a new one
-      .addCase(fetchShows.fulfilled, (state, action) => {
-        state.cache = addToCache(state.cache, toCacheKey(action.meta.arg), action.payload);
-        state.items = action.payload;
-        state.status = 'succeeded';
-      })
-      .addCase(fetchShows.rejected, (state, action) => {
-        // Aborted on purpose: a newer search (or clearing) already owns the state
-        if (action.meta.aborted) {
-          return;
-        }
-        state.items = [];
-        state.status = 'failed';
-        state.error = action.error.message ?? 'Unknown error';
-      });
-  },
 });
 
 export const {
   searchCleared,
   draftChanged,
   sortChanged,
+  searchStarted,
+  resultsReceived,
+  searchFailed,
   resultsRestored,
   genreSelected,
   genreReset,

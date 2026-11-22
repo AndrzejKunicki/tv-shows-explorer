@@ -1,6 +1,6 @@
 import styles from './Discover.module.css';
 import { DiscoverRow } from './DiscoverRow/DiscoverRow';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 /** Discovery rows for people who don't have a title in mind. */
 export const Discover = () => {

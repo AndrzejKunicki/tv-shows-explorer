@@ -1,7 +1,7 @@
 import type { Show } from '@src/api/types';
 import styles from './DiscoverRow.module.css';
 import { PosterCard } from './PosterCard/PosterCard';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 interface DiscoverRowProps {
   id: string;

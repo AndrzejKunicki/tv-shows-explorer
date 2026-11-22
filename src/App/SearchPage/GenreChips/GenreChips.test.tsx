@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GenreChips } from './GenreChips';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
-vi.mock('./usePresenter', () => ({ usePresenter: vi.fn() }));
+vi.mock('./logic/usePresenter', () => ({ usePresenter: vi.fn() }));
 const usePresenterMock = vi.mocked(usePresenter);
 
 const handleSelect = vi.fn();

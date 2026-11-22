@@ -1,6 +1,6 @@
 import { Chip } from './Chip/Chip';
 import styles from './GenreChips.module.css';
-import { usePresenter } from './usePresenter';
+import { usePresenter } from './logic/usePresenter';
 
 export const GenreChips = () => {
   const { genres, selectedGenre, handleSelect, handleReset } = usePresenter();
