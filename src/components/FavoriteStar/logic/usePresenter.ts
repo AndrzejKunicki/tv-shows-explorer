@@ -20,6 +20,14 @@ export const usePresenter = ({ show }: { show: Show }) => {
   // Ignores more clicks until the toast is shown (request + flight). Not `disabled`: it would lose keyboard focus
   const [isPending, setIsPending] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // The star on the card fills up like a liquid while its copy is flying to the counter
+  const [isFilling, setIsFilling] = useState(false);
+
+  const flyStar = async () => {
+    setIsFilling(true);
+    await flyToFavorites(buttonRef.current);
+    setIsFilling(false);
+  };
 
   const handleClick = async () => {
     if (isPending) {
@@ -30,7 +38,7 @@ export const usePresenter = ({ show }: { show: Show }) => {
 
     try {
       // A confirmed add flies the star to the counter first; the count and the toast change once it has arrived
-      const result = await toggleFavorite(show, () => flyToFavorites(buttonRef.current));
+      const result = await toggleFavorite(show, flyStar);
       const message = toToastMessage(show.name, result);
       dispatch(toastShown(message, result.error ? 'error' : 'success'));
     } finally {
@@ -39,5 +47,5 @@ export const usePresenter = ({ show }: { show: Show }) => {
   };
   const label = isFavorite ? `Remove ${show.name} from favorites` : `Add ${show.name} to favorites`;
 
-  return { isFavorite, isPending, label, buttonRef, handleClick };
+  return { isFavorite, isPending, isFilling, label, buttonRef, handleClick };
 };
