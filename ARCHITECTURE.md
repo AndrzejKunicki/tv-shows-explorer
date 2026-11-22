@@ -89,7 +89,8 @@ ComponentName/
 
 ```ts
 // Задача: API + фасад store, результат вызывающему. Store меняется только после ответа сервера.
-export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> => {
+// waitBeforeAdding — обычная функция от presenter (анимация); задача про React и DOM ничего не знает.
+export const toggleFavorite = async (show: Show, waitBeforeAdding = async () => {}) => {
   const wasFavorite = favoritesStore.isFavorite(show.id);
 
   try {
@@ -98,6 +99,7 @@ export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> 
       favoritesStore.remove(show.id);
     } else {
       const saved = await addFavorite(show.id);
+      await waitBeforeAdding();
       favoritesStore.add(saved);
     }
 
@@ -109,12 +111,12 @@ export const toggleFavorite = async (show: Show): Promise<ToggleFavoriteResult> 
   }
 };
 
-// Presenter: loading локально, по результату — toast.
+// Presenter: loading локально, анимация как шаг задачи, по результату — toast.
 const handleClick = async () => {
   setIsPending(true);
-  const result = await toggleFavorite(show);
-  setIsPending(false);
+  const result = await toggleFavorite(show, () => flyToFavorites(buttonRef.current));
   dispatch(toastShown(toToastMessage(show.name, result), result.error ? 'error' : 'success'));
+  setIsPending(false);
 };
 ```
 

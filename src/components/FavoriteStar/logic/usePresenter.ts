@@ -29,11 +29,8 @@ export const usePresenter = ({ show }: { show: Show }) => {
     setIsPending(true);
 
     try {
-      const result = await toggleFavorite(show);
-      // Only a confirmed add flies to the counter; the toast follows once the star has arrived
-      if (!result.error && result.isFavorite) {
-        await flyToFavorites(buttonRef.current);
-      }
+      // A confirmed add flies the star to the counter first; the count and the toast change once it has arrived
+      const result = await toggleFavorite(show, () => flyToFavorites(buttonRef.current));
       const message = toToastMessage(show.name, result);
       dispatch(toastShown(message, result.error ? 'error' : 'success'));
     } finally {
