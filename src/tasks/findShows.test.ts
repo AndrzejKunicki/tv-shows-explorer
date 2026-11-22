@@ -38,6 +38,28 @@ describe('findShows', () => {
     expect(store.getState().shows).toMatchObject({ status: 'succeeded', query: 'Banana', items: testShows.slice(0, 3) });
   });
 
+  it('does nothing when the results of the same query are shown (a space typed at the end)', async () => {
+    searchShowsMock.mockResolvedValue(makeSearchPage({ query: 'banana', pageCount: 3 }));
+    await findShows('banana');
+    store.dispatch(genreSelected('Drama'));
+    store.dispatch(pageChanged(2));
+
+    await findShows('banana ');
+
+    expect(searchShowsMock).toHaveBeenCalledTimes(1);
+    expect(store.getState().shows).toMatchObject({ selectedGenre: 'Drama', page: 2 });
+  });
+
+  it('searches the same query again after a failure', async () => {
+    searchShowsMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(makeSearchPage({ query: 'lost' }));
+
+    await findShows('lost');
+    await findShows('lost');
+
+    expect(searchShowsMock).toHaveBeenCalledTimes(2);
+    expect(store.getState().shows.status).toBe('succeeded');
+  });
+
   it('is loading while the request is in flight', () => {
     deferredRequest(searchShowsMock);
 

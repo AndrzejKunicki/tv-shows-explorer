@@ -13,6 +13,11 @@ export const findShows = async (rawQuery: string): Promise<LoadResultsResult> =>
     return { error: null };
   }
 
+  // E.g. a space typed after the last word: same query, so keep the results, genre and page as they are
+  if (showsStore.hasResultsFor(query)) {
+    return { error: null };
+  }
+
   showsStore.startSearch(query);
   const result = await loadResults();
 

@@ -6,6 +6,7 @@ import {
   selectQuery,
   selectSelectedGenre,
   selectSortBy,
+  selectStatus,
 } from './selectors';
 import {
   draftChanged,
@@ -28,6 +29,13 @@ export const showsStore = {
   getPageCount: () => selectPageCount(store.getState()),
   getSelectedGenre: () => selectSelectedGenre(store.getState()),
   getSortBy: () => selectSortBy(store.getState()),
+  /** Whether the results of exactly this query are already shown. */
+  hasResultsFor: (query: string) => {
+    const state = store.getState();
+    const hasResults = selectQuery(state) === query && selectStatus(state) === 'succeeded';
+
+    return hasResults;
+  },
   /** What the current results page is made of: query, genre, sort order and page. */
   getSearchParams: (): SearchParams => {
     const state = store.getState();

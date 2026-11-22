@@ -53,6 +53,17 @@ describe('showsStore', () => {
     expect(showsStore.getSortBy()).toBe('rating');
   });
 
+  it('tells whether the results of the query are shown', () => {
+    showsStore.startSearch('lost');
+
+    expect(showsStore.hasResultsFor('lost')).toBe(false);
+
+    showsStore.receiveResults(makeSearchPage({ query: 'lost' }));
+
+    expect(showsStore.hasResultsFor('lost')).toBe(true);
+    expect(showsStore.hasResultsFor('lost girl')).toBe(false);
+  });
+
   it('selects and resets the genre', () => {
     showsStore.selectGenre('Drama');
 
