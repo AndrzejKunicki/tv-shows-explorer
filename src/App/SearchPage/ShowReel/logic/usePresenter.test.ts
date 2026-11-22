@@ -6,15 +6,15 @@ import { withPoster } from '@src/store/discover/testState';
 import { searchStarted } from '@src/store/shows/showsSlice';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
-import { loadShowIndex } from '@src/tasks/loadShowIndex';
+import { loadTopRated } from '@src/tasks/loadTopRated';
 import { usePresenter } from './usePresenter';
 
-vi.mock('@src/tasks/loadShowIndex', () => ({ loadShowIndex: vi.fn() }));
+vi.mock('@src/tasks/loadTopRated', () => ({ loadTopRated: vi.fn() }));
 
 const storeWithIndex = () => {
   const store = createStore();
   const shows = Array.from({ length: REEL_ROWS * 2 }, (_, index) => withPoster(index + 1, 9 - index / 10));
-  store.dispatch(feedLoaded({ feed: 'index', shows: shows }));
+  store.dispatch(feedLoaded({ feed: 'topRated', shows: shows }));
 
   return store;
 };
@@ -23,7 +23,7 @@ describe('ShowReel usePresenter', () => {
   it('loads the show index on mount', () => {
     renderHookWithStore(usePresenter);
 
-    expect(loadShowIndex).toHaveBeenCalled();
+    expect(loadTopRated).toHaveBeenCalled();
   });
 
   it('has no rows before the index is loaded', () => {

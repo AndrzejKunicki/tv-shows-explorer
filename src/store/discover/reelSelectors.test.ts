@@ -3,30 +3,28 @@ import type { Show } from '@src/api/types';
 import { REEL_POSTERS_PER_ROW, REEL_ROWS, selectReelRows } from './reelSelectors';
 import { discoverState, withPoster } from './testState';
 
-const rootState = (shows: Show[]) => discoverState({ index: shows });
+const rootState = (shows: Show[]) => discoverState({ topRated: shows });
 
 const manyShows = Array.from({ length: 60 }, (_, index) => withPoster(index + 1, (index % 9) + 1));
 
 describe('selectReelRows', () => {
-  it('splits the best rated posters into rows, each repeated twice for a seamless loop', () => {
+  it('splits the top rated posters into rows, each repeated twice for a seamless loop', () => {
     const rows = selectReelRows(rootState(manyShows));
 
     expect(rows).toHaveLength(REEL_ROWS);
     rows.forEach((row) => expect(row.posters).toHaveLength(REEL_POSTERS_PER_ROW * 2));
   });
 
-  it('skips shows without a poster or a rating', () => {
-    const shows = [...manyShows.slice(0, 10), { ...withPoster(100, 9), image: null }, withPoster(101, null)];
-    const urls = selectReelRows(rootState(shows)).flatMap((row) => row.posters.map((poster) => poster.imageUrl));
-
-    expect(urls).not.toContain('medium-100.jpg');
-    expect(urls).not.toContain('medium-101.jpg');
-  });
-
-  it('puts the highest rated show first', () => {
+  it('keeps the order chosen by the server, starting with the first show', () => {
     const shows = [withPoster(1, 5), withPoster(2, 9.5), ...manyShows.slice(2, 12)];
 
-    expect(selectReelRows(rootState(shows))[0].posters[0].imageUrl).toBe('medium-2.jpg');
+    expect(selectReelRows(rootState(shows))[0].posters[0].imageUrl).toBe('medium-1.jpg');
+  });
+
+  it('uses only as many shows as the wall holds', () => {
+    const urls = selectReelRows(rootState(manyShows)).flatMap((row) => row.posters.map((poster) => poster.imageUrl));
+
+    expect(new Set(urls).size).toBe(REEL_ROWS * REEL_POSTERS_PER_ROW);
   });
 
   it('marks some posters as playing', () => {

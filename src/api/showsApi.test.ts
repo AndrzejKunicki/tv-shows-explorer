@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
-import { fetchShowIndex, fetchTodayShows, searchShows } from './showsApi';
+import { fetchAiringToday, fetchHiddenGems, fetchTopRated, searchShows } from './showsApi';
 import type { SearchPage } from './types';
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -40,33 +40,28 @@ describe('shows api', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/shows/search?q=lost&sort=relevance&page=1&genre=Science-Fiction');
   });
 
-  it('fetchShowIndex requests the given page', async () => {
+  it.each([
+    ['fetchAiringToday', fetchAiringToday, '/api/discover/airing-today'],
+    ['fetchTopRated', fetchTopRated, '/api/discover/top-rated'],
+    ['fetchHiddenGems', fetchHiddenGems, '/api/discover/hidden-gems'],
+  ])('%s requests its discover row', async (_name, fetchRow, url) => {
     respondWith([makeShow(1, [])]);
 
-    const shows = await fetchShowIndex(3);
+    const shows = await fetchRow();
 
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/shows/index?page=3');
+    expect(fetchMock.mock.calls[0][0]).toBe(url);
     expect(shows).toEqual([makeShow(1, [])]);
-  });
-
-  it('fetchTodayShows requests the US schedule', async () => {
-    respondWith([makeShow(2, [])]);
-
-    const shows = await fetchTodayShows();
-
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/schedule?country=US');
-    expect(shows).toEqual([makeShow(2, [])]);
   });
 
   it('throws the error message sent by the server', async () => {
     respondWith({ error: 'TVmaze API error: 503' }, 502);
 
-    await expect(fetchShowIndex()).rejects.toThrow('TVmaze API error: 503');
+    await expect(fetchTopRated()).rejects.toThrow('TVmaze API error: 503');
   });
 
   it('throws the status when the error has no message', async () => {
     fetchMock.mockResolvedValue(new Response('Bad gateway', { status: 502 }));
 
-    await expect(fetchTodayShows()).rejects.toThrow('API error: 502');
+    await expect(fetchAiringToday()).rejects.toThrow('API error: 502');
   });
 });

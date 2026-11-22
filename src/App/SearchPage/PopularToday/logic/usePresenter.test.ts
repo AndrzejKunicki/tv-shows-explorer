@@ -5,16 +5,16 @@ import { withPoster } from '@src/store/discover/testState';
 import { searchStarted } from '@src/store/shows/showsSlice';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
-import { loadTodaySchedule } from '@src/tasks/loadTodaySchedule';
+import { loadAiringToday } from '@src/tasks/loadAiringToday';
 import { pickSuggestion } from './tasks/pickSuggestion';
 import { usePresenter } from './usePresenter';
 
-vi.mock('@src/tasks/loadTodaySchedule', () => ({ loadTodaySchedule: vi.fn() }));
+vi.mock('@src/tasks/loadAiringToday', () => ({ loadAiringToday: vi.fn() }));
 vi.mock('./tasks/pickSuggestion', () => ({ pickSuggestion: vi.fn() }));
 
 const storeWithSchedule = () => {
   const store = createStore();
-  store.dispatch(feedLoaded({ feed: 'schedule', shows: [withPoster(1, 8, 99), withPoster(2, 7, 80)] }));
+  store.dispatch(feedLoaded({ feed: 'airingToday', shows: [withPoster(1, 8, 99), withPoster(2, 7, 80)] }));
 
   return store;
 };
@@ -23,7 +23,7 @@ describe('PopularToday usePresenter', () => {
   it("loads today's schedule on mount", () => {
     renderHookWithStore(usePresenter);
 
-    expect(loadTodaySchedule).toHaveBeenCalled();
+    expect(loadAiringToday).toHaveBeenCalled();
   });
 
   it('is hidden while there are no names', () => {

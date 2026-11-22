@@ -31,16 +31,23 @@ export const searchShows = async (params: SearchParams, signal?: AbortSignal): P
   return page;
 };
 
-/** One page (up to 250 shows) of the TVMaze show index. */
-export const fetchShowIndex = async (page = 0): Promise<Show[]> => {
-  const shows = await getJson<Show[]>(`/api/shows/index?page=${page}`);
+/** Shows airing today on US TV, most popular first (chosen by the server). */
+export const fetchAiringToday = async (): Promise<Show[]> => {
+  const shows = await getJson<Show[]>('/api/discover/airing-today');
 
   return shows;
 };
 
-/** Shows with an episode airing today on US TV. */
-export const fetchTodayShows = async (): Promise<Show[]> => {
-  const shows = await getJson<Show[]>('/api/schedule?country=US');
+/** The highest rated well known shows, best first (chosen by the server). */
+export const fetchTopRated = async (): Promise<Show[]> => {
+  const shows = await getJson<Show[]>('/api/discover/top-rated');
+
+  return shows;
+};
+
+/** Well rated, less known shows, different on every request (chosen by the server). */
+export const fetchHiddenGems = async (): Promise<Show[]> => {
+  const shows = await getJson<Show[]>('/api/discover/hidden-gems');
 
   return shows;
 };

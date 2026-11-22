@@ -12,3 +12,10 @@ export const makeShow = (id: number, genres: string[], rating: number | null = n
   rating: { average: rating },
   weight: 50,
 });
+
+/** A show with a poster, as the discovery rows need. */
+export const makePoster = (id: number, rating: number | null, weight = 95): Show => ({
+  ...makeShow(id, [], rating),
+  image: { medium: `medium-${id}.jpg`, original: `original-${id}.jpg` },
+  weight,
+});

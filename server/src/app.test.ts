@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getTodayShows } from '#src/tasks/getTodayShows.ts';
+import { getAiringToday } from '#src/tasks/getAiringToday.ts';
 import { request } from '#src/testServer.ts';
 
-vi.mock('#src/tasks/getTodayShows.ts', () => ({ getTodayShows: vi.fn() }));
+vi.mock('#src/tasks/getAiringToday.ts', () => ({ getAiringToday: vi.fn() }));
 
 describe('app', () => {
   afterEach(() => {
@@ -17,9 +17,9 @@ describe('app', () => {
   });
 
   it('turns a failed TVmaze request into a 502 with the message', async () => {
-    vi.mocked(getTodayShows).mockRejectedValueOnce(new Error('TVmaze API error: 503'));
+    vi.mocked(getAiringToday).mockRejectedValueOnce(new Error('TVmaze API error: 503'));
 
-    const response = await request('/api/schedule');
+    const response = await request('/api/discover/airing-today');
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({ error: 'TVmaze API error: 503' });
