@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';
 import { toastShown } from '@src/store/toasts/toastsSlice';
-import { TOAST_DURATION_MS, usePresenter } from './usePresenter';
+import { ICON_PATHS, TOAST_DURATION_MS, usePresenter } from './usePresenter';
 
 const storeWithToast = () => {
   const store = createStore();
@@ -27,7 +27,7 @@ describe('Toast usePresenter', () => {
 
     const { result } = renderHookWithStore(() => usePresenter({ toast }), store);
 
-    expect(result.current).toMatchObject({ message: 'Saved', tone: 'error' });
+    expect(result.current).toMatchObject({ message: 'Saved', tone: 'error', iconPath: ICON_PATHS.error });
   });
 
   it('hides the toast after a while', () => {

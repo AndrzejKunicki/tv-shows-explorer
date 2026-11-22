@@ -12,6 +12,7 @@ export const Favorites = () => {
         ref={buttonRef}
         type="button"
         className={styles.button}
+        data-favorites-target
         aria-label={buttonLabel}
         aria-expanded={isOpen}
         aria-controls="favorites-panel"

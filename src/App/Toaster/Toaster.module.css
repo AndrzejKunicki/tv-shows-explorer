@@ -1,7 +1,8 @@
+/* Right under the favorites counter (top right), where the eye goes after clicking a star */
 .toaster {
   position: fixed;
+  top: 68px;
   right: 16px;
-  bottom: 16px;
   left: 16px;
   z-index: 30;
   display: flex;
