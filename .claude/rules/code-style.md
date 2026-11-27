@@ -99,3 +99,17 @@ import { useAppDispatch } from '../../../store/hooks';
 Алиас настроен в двух местах, и они должны совпадать: `tsconfig.app.json` (`paths`) для TypeScript
 и `vite.config.ts` (`resolve.alias`) для Vite и Vitest.
 В `vi.mock(...)` используется тот же путь, что и в импорте.
+
+## 5. Нет неиспользуемых переменных **(lint: `no-unused-vars`, tsc: `noUnusedLocals`, `noUnusedParameters`)**
+
+- Неиспользуемые переменные, импорты, параметры и пойманные ошибки запрещены.
+- Исключение — параметр с префиксом `_`, который нужен по сигнатуре: обработчик ошибок Express обязан иметь
+  4 параметра (`_request`, `_response`, `_next`), иначе Express не считает его обработчиком ошибок.
+  Такие параметры не удаляем. Для пойманной ошибки, которая не нужна, пишем `catch {` без переменной.
+- Локальные переменные с `_` не исключение: TypeScript их тоже запрещает.
+
+## 6. API Vitest — только в тестах **(lint: `no-restricted-globals`, tsc: отдельные tsconfig)**
+
+- `describe`, `it`, `test`, `expect`, `vi`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll` глобальные,
+  но доступны только в `*.test.ts(x)`: их типы подключены в `tsconfig.test.json` и `server/tsconfig.test.json`,
+  а `tsconfig.app.json` и `server/tsconfig.json` тесты исключают. Вне тестов это ошибка и `tsc`, и линтера.
