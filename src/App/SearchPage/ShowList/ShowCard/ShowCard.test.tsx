@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
 import { ShowCard } from './ShowCard';
 import { usePresenter } from './logic/usePresenter';

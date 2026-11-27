@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import type { SortBy } from '@src/store/shows/showsSlice';
 import { SortSelect } from './SortSelect';
 import { usePresenter } from './logic/usePresenter';

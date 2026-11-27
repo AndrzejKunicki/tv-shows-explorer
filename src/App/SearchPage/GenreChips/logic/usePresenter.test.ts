@@ -1,5 +1,4 @@
 import { act } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { genreSelected, resultsReceived } from '@src/store/shows/showsSlice';
 import { makeSearchPage } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';

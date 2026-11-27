@@ -1,5 +1,4 @@
 import { act } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import { renderHookWithStore } from '@src/store/testStore';
 import { toastShown } from '@src/store/toasts/toastsSlice';
 import { usePresenter } from './usePresenter';

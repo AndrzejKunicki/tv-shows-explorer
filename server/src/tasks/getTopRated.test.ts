@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { makePoster, makeShow } from '#src/api/testShows.ts';
 import { getShowIndex } from './getShowIndex.ts';
 import { getTopRated, TOP_RATED_COUNT } from './getTopRated.ts';

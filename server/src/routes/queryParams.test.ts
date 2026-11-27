@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { parseInteger, parseSearchParams } from './queryParams.ts';
 
 describe('parseInteger', () => {

@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeShow } from './testShows.ts';
 import { fetchSchedule, fetchShow, fetchShowIndex, searchShows, TvmazeError } from './tvmaze.ts';
 

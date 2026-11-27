@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { GEM_PAGE_COUNT, GEM_PAGE_RANGE, pickGemPages } from './pickGemPages.ts';
 
 describe('pickGemPages', () => {

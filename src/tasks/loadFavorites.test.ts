@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchFavorites } from '@src/api/favoritesApi';
 import { makeShow } from '@src/store/shows/testShows';
 import type { AppStore } from '@src/store/store';

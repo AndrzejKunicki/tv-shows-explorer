@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
 import { request } from './request';
 import { fetchAiringToday, fetchHiddenGems, fetchTopRated, searchShows } from './showsApi';

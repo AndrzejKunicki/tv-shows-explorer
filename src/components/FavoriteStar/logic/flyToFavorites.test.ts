@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FAVORITES_TARGET_SELECTOR, FLY_DURATION_MS, flyToFavorites } from './flyToFavorites';
 
 const animate = vi.fn<HTMLElement['animate']>(() => ({ finished: Promise.resolve() }) as unknown as Animation);

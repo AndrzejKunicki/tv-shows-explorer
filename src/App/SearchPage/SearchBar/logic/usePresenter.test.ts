@@ -1,6 +1,5 @@
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import { act, fireEvent } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { draftChanged } from '@src/store/shows/showsSlice';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';

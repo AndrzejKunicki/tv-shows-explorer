@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addFavorite, removeFavorite } from '@src/api/favoritesApi';
 import { favoritesStore } from '@src/store/favorites/favoritesStore';
 import { makeShow } from '@src/store/shows/testShows';

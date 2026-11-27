@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { searchShows } from '@src/api/showsApi';
 import { genreSelected, pageChanged, searchStarted, sortChanged } from '@src/store/shows/showsSlice';
 import { makeSearchPage, testShows } from '@src/store/shows/testShows';

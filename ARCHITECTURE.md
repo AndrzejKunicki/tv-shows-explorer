@@ -198,6 +198,9 @@ export const goToNextPage = async () => {
 - Стили и тесты лежат рядом с файлами, к которым относятся, — в том же каталоге.
 - Стили: `ComponentName.module.css` рядом с `ComponentName.tsx`.
 - Тесты: `FileName.test.ts(x)` рядом с тестируемым файлом; расширение теста совпадает с расширением файла.
+- `describe`, `it`, `expect`, `vi`, `beforeEach`, `afterEach` — глобальные (`globals: true` в `vite.config.ts`,
+  типы `vitest/globals` в tsconfig): из `vitest` их не импортируем, только типы (`import type { Mock } from 'vitest'`).
+  Testing Library при этом сам очищает DOM после каждого теста.
 - У каждого файла `.ts`/`.tsx` есть свой тест. Исключения: стили, файлы только с типами (`types.ts`, `*.d.ts`),
   точка входа `main.tsx` и тестовые фикстуры/хелперы (`test*.ts(x)`, например `testShows.ts`, `testStore.tsx`).
 - View тестируем с замоканным `usePresenter` (`vi.mock('./logic/usePresenter')`) и замоканными дочерними

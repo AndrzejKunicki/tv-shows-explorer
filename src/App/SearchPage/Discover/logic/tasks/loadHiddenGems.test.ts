@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { fetchHiddenGems } from '@src/api/showsApi';
 import { testShows } from '@src/store/shows/testShows';
 import { resetAppStore } from '@src/store/testAppStore';

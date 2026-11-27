@@ -1,5 +1,4 @@
 import { fireEvent, render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { ShowReel } from './ShowReel';
 import { usePresenter } from './logic/usePresenter';
 

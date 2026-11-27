@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   DISCOVER_ROW_SIZE,
   POPULAR_TODAY_COUNT,

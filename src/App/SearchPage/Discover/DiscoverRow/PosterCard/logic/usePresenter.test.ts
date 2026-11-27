@@ -1,5 +1,4 @@
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import type { Show } from '@src/api/types';
 import { withPoster } from '@src/store/discover/testState';
 import { makeShow } from '@src/store/shows/testShows';

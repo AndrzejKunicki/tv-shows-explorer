@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { testShows } from '@src/store/shows/testShows';
 import { discoverReducer, feedFailed, feedLoaded, feedRequested, initialState } from './discoverSlice';
 

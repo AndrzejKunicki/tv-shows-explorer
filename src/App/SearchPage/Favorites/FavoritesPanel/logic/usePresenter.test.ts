@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { favoritesFailed, favoritesLoaded, favoritesRequested } from '@src/store/favorites/favoritesSlice';
 import { makeShow } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';

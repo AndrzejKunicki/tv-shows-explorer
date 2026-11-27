@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cacheStorage } from '#src/storage/cache.ts';
 import { CACHE_TTL_MS, getCached } from './getCached.ts';
 

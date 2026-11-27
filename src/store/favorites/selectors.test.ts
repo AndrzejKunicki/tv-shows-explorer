@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
 import { createStore, type RootState } from '@src/store/store';
 import type { FavoritesState } from './favoritesSlice';

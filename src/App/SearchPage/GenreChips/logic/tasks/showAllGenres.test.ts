@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { showsStore } from '@src/store/shows/showsStore';
 import { loadResults } from '@src/tasks/loadResults';
 import { showAllGenres } from './showAllGenres';

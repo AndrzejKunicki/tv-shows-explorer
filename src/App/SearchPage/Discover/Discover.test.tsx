@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { withPoster } from '@src/store/discover/testState';
 import { Discover } from './Discover';
 import { usePresenter } from './logic/usePresenter';

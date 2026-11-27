@@ -23,7 +23,8 @@ export default defineConfig({
           name: 'client',
           include: ['src/**/*.test.{ts,tsx}'],
           environment: 'jsdom',
-          setupFiles: ['./vitest.setup.ts'],
+          // describe/it/expect/vi/beforeEach/afterEach without imports; Testing Library then cleans up by itself
+          globals: true,
         },
       },
       {
@@ -31,6 +32,7 @@ export default defineConfig({
           name: 'server',
           include: ['server/src/**/*.test.ts'],
           environment: 'node',
+          globals: true,
         },
       },
     ],

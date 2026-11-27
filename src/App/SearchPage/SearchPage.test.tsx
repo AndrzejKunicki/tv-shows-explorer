@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { SearchPage } from './SearchPage';
 import { usePresenter } from './logic/usePresenter';
 

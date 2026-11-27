@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { initialState, toastHidden, toastShown, toastsReducer } from './toastsSlice';
 
 describe('toastsSlice', () => {
