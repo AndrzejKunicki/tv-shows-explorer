@@ -1,21 +1,8 @@
 {
-  "compilerOptions": {
-    "target": "es2024",
-    "lib": ["ES2024"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "types": ["node", "vitest/globals"],
-    "strict": true,
-    "skipLibCheck": true,
-
-    /* Node runs the .ts files directly (type stripping): no build step, only type checking */
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
-
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
-  },
-  "include": ["src"]
+  /* Editors and `tsc -b` pick the right config per file: production code -> app, *.test.ts -> test */
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.test.json" }
+  ]
 }

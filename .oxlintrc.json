@@ -9,6 +9,37 @@
     "no-restricted-imports": [
       "error",
       { "patterns": [{ "group": ["../**"], "message": "Use the @src/... alias instead of ../" }] }
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "args": "after-used",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ],
+    "no-restricted-globals": [
+      "error",
+      { "name": "describe", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "it", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "test", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "expect", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "vi", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "beforeEach", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "afterEach", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "beforeAll", "message": "The Vitest API is available only in *.test.ts(x) files" },
+      { "name": "afterAll", "message": "The Vitest API is available only in *.test.ts(x) files" }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "no-restricted-globals": "off"
+      }
+    }
+  ]
 }
