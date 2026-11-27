@@ -1,6 +1,5 @@
 import type { ChangeEvent } from 'react';
 import { act } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sortChanged } from '@src/store/shows/showsSlice';
 import { renderHookWithStore } from '@src/store/testStore';
 import { changeSort } from './tasks/changeSort';

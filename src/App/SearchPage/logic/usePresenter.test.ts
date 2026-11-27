@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import type { Show } from '@src/api/types';
 import { resultsReceived, searchFailed, searchStarted } from '@src/store/shows/showsSlice';
 import { makeSearchPage, makeShow } from '@src/store/shows/testShows';

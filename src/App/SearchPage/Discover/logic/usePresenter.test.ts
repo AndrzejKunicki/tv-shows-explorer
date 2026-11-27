@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { feedLoaded } from '@src/store/discover/discoverSlice';
 import { withPoster } from '@src/store/discover/testState';
 import { createStore } from '@src/store/store';

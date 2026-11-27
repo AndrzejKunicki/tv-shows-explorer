@@ -1,5 +1,4 @@
 import { act, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { favoritesLoaded } from '@src/store/favorites/favoritesSlice';
 import { makeShow } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';

@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { makePoster, makeShow } from '#src/api/testShows.ts';
 import { byPopularityDesc, byRatingDesc, uniqueById, withPoster } from './showRanking.ts';
 

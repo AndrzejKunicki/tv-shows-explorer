@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makePoster } from '#src/api/testShows.ts';
 import { GEM_MAX_WEIGHT, GEM_MIN_COUNT, GEM_MIN_RATING, getHiddenGems } from './getHiddenGems.ts';
 import { getShowIndex } from './getShowIndex.ts';

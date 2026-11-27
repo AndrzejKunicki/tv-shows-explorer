@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { searchShows } from '@src/api/showsApi';
 import { makeSearchPage, testShows } from '@src/store/shows/testShows';
 import type { AppStore } from '@src/store/store';

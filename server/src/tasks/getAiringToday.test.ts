@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { makePoster, makeShow } from '#src/api/testShows.ts';
 import { getAiringToday } from './getAiringToday.ts';
 import { getTodayShows } from './getTodayShows.ts';

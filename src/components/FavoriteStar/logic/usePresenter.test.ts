@@ -1,5 +1,4 @@
 import { act } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { favoriteAdded } from '@src/store/favorites/favoritesSlice';
 import { makeShow } from '@src/store/shows/testShows';
 import { createStore } from '@src/store/store';

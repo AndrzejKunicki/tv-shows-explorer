@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findShowsPage } from '#src/tasks/findShowsPage.ts';
 import { request } from '#src/testServer.ts';
 

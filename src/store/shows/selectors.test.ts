@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { createStore, type RootState } from '@src/store/store';
 import {
   selectDraft,

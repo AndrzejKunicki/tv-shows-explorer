@@ -1,4 +1,3 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getAiringToday } from '#src/tasks/getAiringToday.ts';
 import { request } from '#src/testServer.ts';
 

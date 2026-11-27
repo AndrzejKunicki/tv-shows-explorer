@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import { showsStore } from '@src/store/shows/showsStore';
 import { findShows } from '@src/tasks/findShows';
 import { pickSuggestion } from './pickSuggestion';

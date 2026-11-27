@@ -1,5 +1,4 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { SCROLL_STEP, usePresenter } from './usePresenter';
 
 const renderPresenter = () => renderHook(() => usePresenter({ id: 'gems', title: 'Hidden gems' }));

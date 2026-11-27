@@ -1,6 +1,5 @@
 import { createRef } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { withPoster } from '@src/store/discover/testState';
 import { DiscoverRow } from './DiscoverRow';
 import { usePresenter } from './logic/usePresenter';

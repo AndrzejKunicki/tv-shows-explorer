@@ -1,5 +1,4 @@
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import { makeShow } from '@src/store/shows/testShows';
 import { usePresenter } from './usePresenter';
 

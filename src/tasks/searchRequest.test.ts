@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cancelSearch, scheduleSearch, startSearchRequest } from './searchRequest';
 
 describe('searchRequest', () => {

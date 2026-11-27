@@ -1,5 +1,4 @@
 import { act } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { feedLoaded } from '@src/store/discover/discoverSlice';
 import { REEL_ROWS } from '@src/store/discover/reelSelectors';
 import { withPoster } from '@src/store/discover/testState';

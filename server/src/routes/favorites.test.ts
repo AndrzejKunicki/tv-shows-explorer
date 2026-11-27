@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeShow } from '#src/api/testShows.ts';
 import { addFavorite } from '#src/tasks/addFavorite.ts';
 import { listFavorites } from '#src/tasks/listFavorites.ts';

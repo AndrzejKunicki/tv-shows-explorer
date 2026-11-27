@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import type { Show } from '@src/api/types';
 import { REEL_POSTERS_PER_ROW, REEL_ROWS, selectReelRows } from './reelSelectors';
 import { discoverState, withPoster } from './testState';

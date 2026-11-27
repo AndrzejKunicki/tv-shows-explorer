@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { initialState as discoverInitialState } from './discover/discoverSlice';
 import { initialState as favoritesInitialState } from './favorites/favoritesSlice';
 import { draftChanged, initialState as showsInitialState } from './shows/showsSlice';

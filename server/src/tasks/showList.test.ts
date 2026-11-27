@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { makeShow } from '#src/api/testShows.ts';
 import { filterByGenre, listGenres, PAGE_SIZE, paginate, sortShows } from './showList.ts';
 

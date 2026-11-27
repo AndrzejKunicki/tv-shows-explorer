@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { searchStarted } from '@src/store/shows/showsSlice';
 import { createStore } from '@src/store/store';
 import { renderHookWithStore } from '@src/store/testStore';

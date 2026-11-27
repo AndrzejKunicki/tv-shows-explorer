@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { testShows } from '@src/store/shows/testShows';
 import type { AppStore } from '@src/store/store';
 import { resetAppStore } from '@src/store/testAppStore';
