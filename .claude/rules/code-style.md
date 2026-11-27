@@ -112,4 +112,5 @@ import { useAppDispatch } from '../../../store/hooks';
 
 - `describe`, `it`, `test`, `expect`, `vi`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll` глобальные,
   но доступны только в `*.test.ts(x)`: их типы подключены в `tsconfig.test.json` и `server/tsconfig.test.json`,
-  а `tsconfig.app.json` и `server/tsconfig.json` тесты исключают. Вне тестов это ошибка и `tsc`, и линтера.
+  а `tsconfig.app.json` и `server/tsconfig.app.json` тесты исключают. Корневые `tsconfig.json` (клиент и `server/`)
+  содержат только ссылки на эти конфиги — так редактор подбирает нужный конфиг для каждого файла. Вне тестов это ошибка и `tsc`, и линтера.

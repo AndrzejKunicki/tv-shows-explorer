@@ -1,7 +1,8 @@
 {
   /* Server tests: the same settings as the server, plus the global Vitest API (describe, it, expect, vi, ...) */
-  "extends": "./tsconfig.json",
+  "extends": "./tsconfig.app.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
     "types": ["node", "vitest/globals"]
   },
   "include": ["src"],
